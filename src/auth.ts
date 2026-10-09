@@ -1,5 +1,6 @@
 import { betterAuth } from 'better-auth'
 import { drizzleAdapter } from 'better-auth/adapters/drizzle'
+import { openAPI } from 'better-auth/plugins'
 import { db } from './db/index.ts'
 import * as schema from './db/schema.ts'
 
@@ -8,6 +9,7 @@ export const auth = betterAuth({
   secret: process.env.BETTER_AUTH_SECRET,
   database: drizzleAdapter(db, { provider: 'pg', schema }),
   emailAndPassword: { enabled: true },
+  plugins: [openAPI({ disableDefaultReference: true })],
   socialProviders: {
     google: {
       clientId: process.env.GOOGLE_CLIENT_ID as string,

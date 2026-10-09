@@ -62,7 +62,7 @@ Copy `.env.example` to `.env`.
 
 ## API contract
 
-The OpenAPI document is served at http://localhost:3000/openapi.json, with interactive docs ([Scalar](https://scalar.com)) at http://localhost:3000/docs. Routes are declared with `createRoute` from `@hono/zod-openapi`, so request validation, TypeScript types and the spec all come from the same Zod schemas. The client generates its types from this document.
+The OpenAPI document is served at http://localhost:3000/openapi.json, with interactive docs ([Scalar](https://scalar.com)) at http://localhost:3000/docs. The Better Auth endpoints (`/api/auth/*`) are merged into the same document, under the **Auth** tag. Routes are declared with `createRoute` from `@hono/zod-openapi`, so request validation, TypeScript types and the spec all come from the same Zod schemas. The client generates its types from this document.
 
 Code is organised by bounded context under `src/modules/<context>/`.
 
@@ -70,6 +70,7 @@ Code is organised by bounded context under `src/modules/<context>/`.
 
 [Better Auth](https://www.better-auth.com) is mounted at `/api/auth/*` (config in `src/auth.ts`). Sessions are cookie-based and stored in PostgreSQL.
 
+- All endpoints are listed in the Scalar docs at `/docs` (tag **Auth**)
 - Email/password: `POST /api/auth/sign-up/email`, `POST /api/auth/sign-in/email`
 - Google: `POST /api/auth/sign-in/social` with `{ "provider": "google", "callbackURL": "..." }` returns the Google URL to redirect to
 - Session: `GET /api/auth/get-session`, sign out with `POST /api/auth/sign-out`
@@ -98,28 +99,28 @@ Schema is in `src/db/schema.ts`, migrations in `drizzle/`.
 
 Run `mise tasks` to list them all.
 
-| Command                   | Description                                    |
-| ------------------------- | ---------------------------------------------- |
-| `mise run install`        | Install dependencies and git hooks             |
-| `mise run services`       | Start PostgreSQL/PostGIS                       |
-| `mise run services:down`  | Stop services (data is kept)                   |
-| `mise run services:reset` | Stop services and delete their data            |
-| `mise run dev`            | Start the API with hot reload                  |
-| `mise run db:migrate`     | Apply migrations to the local database         |
-| `mise run db:generate`    | Generate a migration from the schema           |
-| `mise run db:studio`      | Browse the database (Drizzle Studio)           |
-| `mise run auth:generate`  | Regenerate the auth schema from `src/auth.ts`  |
-| `mise run build`          | Type-check and build for production            |
-| `mise run start`          | Run the production build                       |
-| `mise run lint`           | Lint with oxlint                               |
-| `mise run lint:fix`       | Lint and auto-fix                              |
-| `mise run fmt`            | Format with Prettier                           |
-| `mise run fmt:check`      | Check formatting                               |
-| `mise run typecheck`      | Type-check with tsc                            |
-| `mise run test`           | Run tests once                                 |
-| `mise run test:watch`     | Run tests in watch mode                        |
-| `mise run check`          | Lint + format check                            |
-| `mise run ci`             | Lint, format check, typecheck, tests and build |
+| Command                   | Description                                         |
+| ------------------------- | --------------------------------------------------- |
+| `mise run auth:generate`  | Regenerate the Drizzle auth schema from src/auth.ts |
+| `mise run build`          | Type-check and build for production                 |
+| `mise run check`          | Lint + format check                                 |
+| `mise run ci`             | Lint, format check, typecheck, tests and build      |
+| `mise run db:generate`    | Generate a SQL migration from the Drizzle schema    |
+| `mise run db:migrate`     | Apply migrations to the local database              |
+| `mise run db:studio`      | Browse the database with Drizzle Studio             |
+| `mise run dev`            | Start the API with hot reload                       |
+| `mise run fmt`            | Format with prettier                                |
+| `mise run fmt:check`      | Check formatting with prettier                      |
+| `mise run install`        | Install dependencies and git hooks                  |
+| `mise run lint`           | Lint with oxlint                                    |
+| `mise run lint:fix`       | Lint and auto-fix with oxlint                       |
+| `mise run services`       | Start local services (PostgreSQL/PostGIS)           |
+| `mise run services:down`  | Stop local services (data is kept)                  |
+| `mise run services:reset` | Stop local services and delete their data           |
+| `mise run start`          | Run the production build                            |
+| `mise run test`           | Run tests once                                      |
+| `mise run test:watch`     | Run tests in watch mode                             |
+| `mise run typecheck`      | Type-check with tsc                                 |
 
 ## Git hooks
 
