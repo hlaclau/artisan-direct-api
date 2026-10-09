@@ -1,0 +1,15 @@
+pre-commit:
+  parallel: true
+  commands:
+    lint:
+      glob: '*.{js,jsx,ts,tsx,mjs,cjs}'
+      run: bunx oxlint {staged_files}
+    fmt:
+      glob: '*.{js,jsx,ts,tsx,mjs,cjs,json,css,html,md,yml,yaml}'
+      run: bunx prettier --write --ignore-unknown {staged_files}
+      stage_fixed: true
+
+commit-msg:
+  commands:
+    commitlint:
+      run: bunx commitlint --edit {1}

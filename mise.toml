@@ -1,0 +1,58 @@
+[tools]
+bun = "1.4.2"
+
+[tasks.install]
+description = "Install dependencies and git hooks"
+run = ["bun install", "bunx lefthook install"]
+
+[tasks.services]
+description = "Start local services (PostgreSQL/PostGIS)"
+run = "docker compose up -d"
+
+[tasks.dev]
+description = "Start the API with hot reload"
+run = "bun run dev"
+
+[tasks.build]
+description = "Type-check and build for production"
+run = "bun run build"
+
+[tasks.start]
+description = "Run the production build"
+run = "bun run start"
+
+[tasks.lint]
+description = "Lint with oxlint"
+run = "bunx oxlint"
+
+[tasks."lint:fix"]
+description = "Lint and auto-fix with oxlint"
+run = "bunx oxlint --fix"
+
+[tasks.fmt]
+description = "Format with prettier"
+run = "bunx prettier --write ."
+
+[tasks."fmt:check"]
+description = "Check formatting with prettier"
+run = "bunx prettier --check ."
+
+[tasks.check]
+description = "Run lint and format checks"
+depends = ["lint", "fmt:check"]
+
+[tasks.typecheck]
+description = "Type-check with tsc"
+run = "bunx tsc --noEmit"
+
+[tasks.test]
+description = "Run tests once"
+run = "bunx vitest run"
+
+[tasks."test:watch"]
+description = "Run tests in watch mode"
+run = "bunx vitest"
+
+[tasks.ci]
+description = "Run every CI check"
+depends = ["lint", "fmt:check", "typecheck", "test", "build"]
