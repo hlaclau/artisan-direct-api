@@ -9,6 +9,14 @@ run = ["bun install", "bunx lefthook install"]
 description = "Start local services (PostgreSQL/PostGIS)"
 run = "docker compose up -d"
 
+[tasks."services:down"]
+description = "Stop local services (data is kept)"
+run = "docker compose down"
+
+[tasks."services:reset"]
+description = "Stop local services and delete their data"
+run = "docker compose down -v"
+
 [tasks.dev]
 description = "Start the API with hot reload"
 run = "bun run dev"
