@@ -16,4 +16,11 @@ describe('app', () => {
     expect(res.status).toBe(200)
     expect(doc.paths).toHaveProperty('/health')
   })
+
+  it('serves the Scalar API reference', async () => {
+    const res = await app.request('/docs')
+
+    expect(res.status).toBe(200)
+    expect(res.headers.get('content-type')).toContain('text/html')
+  })
 })
