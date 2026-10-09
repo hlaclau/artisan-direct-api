@@ -20,6 +20,6 @@ ADP-
 
 ## Checklist
 
-- [ ] Branch name and commits follow the [conventions](../CONTRIBUTING.md)
+- [ ] Branch name and commits follow the [conventions](https://github.com/hlaclau/artisan-direct-api/blob/master/CONTRIBUTING.md)
 - [ ] Tested locally
 - [ ] Documentation updated if needed
