@@ -1,0 +1,21 @@
+name: artisan-direct-api
+
+services:
+  postgres:
+    image: imresamu/postgis:17-3.5 # multi-arch (the official image is amd64 only)
+    environment:
+      POSTGRES_USER: artisan
+      POSTGRES_PASSWORD: artisan
+      POSTGRES_DB: artisan_direct
+    ports:
+      - '5432:5432'
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U artisan -d artisan_direct']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  postgres-data:
