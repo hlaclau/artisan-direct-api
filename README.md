@@ -47,6 +47,19 @@ The API runs on http://localhost:3000. Try `curl localhost:3000/health`.
 | ---------- | ---------------------------------------------------------- |
 | PostgreSQL | `postgres://artisan:artisan@localhost:5432/artisan_direct` |
 
+## Environment variables
+
+Copy `.env.example` to `.env`.
+
+| Variable               | Description                                          |
+| ---------------------- | ---------------------------------------------------- |
+| `PORT`                 | API port (default `3000`)                            |
+| `DATABASE_URL`         | PostgreSQL connection string                         |
+| `BETTER_AUTH_URL`      | Public base URL of the API (used for OAuth callback) |
+| `BETTER_AUTH_SECRET`   | Random string of 32+ characters, signs sessions      |
+| `GOOGLE_CLIENT_ID`     | Google OAuth client ID                               |
+| `GOOGLE_CLIENT_SECRET` | Google OAuth client secret                           |
+
 ## API contract
 
 The OpenAPI document is served at http://localhost:3000/openapi.json, with interactive docs ([Scalar](https://scalar.com)) at http://localhost:3000/docs. Routes are declared with `createRoute` from `@hono/zod-openapi`, so request validation, TypeScript types and the spec all come from the same Zod schemas. The client generates its types from this document.
@@ -85,26 +98,28 @@ Schema is in `src/db/schema.ts`, migrations in `drizzle/`.
 
 Run `mise tasks` to list them all.
 
-| Command                  | Description                                    |
-| ------------------------ | ---------------------------------------------- |
-| `mise run install`       | Install dependencies and git hooks             |
-| `mise run services`      | Start PostgreSQL/PostGIS                       |
-| `mise run dev`           | Start the API with hot reload                  |
-| `mise run db:migrate`    | Apply migrations to the local database         |
-| `mise run db:generate`   | Generate a migration from the schema           |
-| `mise run db:studio`     | Browse the database (Drizzle Studio)           |
-| `mise run auth:generate` | Regenerate the auth schema from `src/auth.ts`  |
-| `mise run build`         | Type-check and build for production            |
-| `mise run start`         | Run the production build                       |
-| `mise run lint`          | Lint with oxlint                               |
-| `mise run lint:fix`      | Lint and auto-fix                              |
-| `mise run fmt`           | Format with Prettier                           |
-| `mise run fmt:check`     | Check formatting                               |
-| `mise run typecheck`     | Type-check with tsc                            |
-| `mise run test`          | Run tests once                                 |
-| `mise run test:watch`    | Run tests in watch mode                        |
-| `mise run check`         | Lint + format check                            |
-| `mise run ci`            | Lint, format check, typecheck, tests and build |
+| Command                   | Description                                    |
+| ------------------------- | ---------------------------------------------- |
+| `mise run install`        | Install dependencies and git hooks             |
+| `mise run services`       | Start PostgreSQL/PostGIS                       |
+| `mise run services:down`  | Stop services (data is kept)                   |
+| `mise run services:reset` | Stop services and delete their data            |
+| `mise run dev`            | Start the API with hot reload                  |
+| `mise run db:migrate`     | Apply migrations to the local database         |
+| `mise run db:generate`    | Generate a migration from the schema           |
+| `mise run db:studio`      | Browse the database (Drizzle Studio)           |
+| `mise run auth:generate`  | Regenerate the auth schema from `src/auth.ts`  |
+| `mise run build`          | Type-check and build for production            |
+| `mise run start`          | Run the production build                       |
+| `mise run lint`           | Lint with oxlint                               |
+| `mise run lint:fix`       | Lint and auto-fix                              |
+| `mise run fmt`            | Format with Prettier                           |
+| `mise run fmt:check`      | Check formatting                               |
+| `mise run typecheck`      | Type-check with tsc                            |
+| `mise run test`           | Run tests once                                 |
+| `mise run test:watch`     | Run tests in watch mode                        |
+| `mise run check`          | Lint + format check                            |
+| `mise run ci`             | Lint, format check, typecheck, tests and build |
 
 ## Git hooks
 
