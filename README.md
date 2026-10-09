@@ -82,6 +82,8 @@ Installed by `mise run install` through Lefthook:
 
 Tests live next to the code as `*.test.ts`. Routes are tested without starting a server via `app.request()`.
 
+Integration tests run against a throwaway PostGIS container (Testcontainers) with the migrations applied, so they never touch your dev database. Docker is required.
+
 ## CI
 
 GitHub Actions runs lint, format, typecheck, test and build as parallel jobs on every Pull Request and on `master`. Run `mise run ci` locally to run them all before pushing.
