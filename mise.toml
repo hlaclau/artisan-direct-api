@@ -13,6 +13,22 @@ run = "docker compose up -d"
 description = "Start the API with hot reload"
 run = "bun run dev"
 
+[tasks."db:generate"]
+description = "Generate a SQL migration from the Drizzle schema"
+run = "bun run db:generate"
+
+[tasks."db:migrate"]
+description = "Apply migrations to the local database"
+run = "bun run db:migrate"
+
+[tasks."db:studio"]
+description = "Browse the database with Drizzle Studio"
+run = "bun run db:studio"
+
+[tasks."auth:generate"]
+description = "Regenerate the Drizzle auth schema from src/auth.ts"
+run = "bun run auth:generate"
+
 [tasks.build]
 description = "Type-check and build for production"
 run = "bun run build"
