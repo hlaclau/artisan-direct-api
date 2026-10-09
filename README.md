@@ -33,13 +33,17 @@ mise run install  # installs dependencies and git hooks
 cp .env.example .env
 ```
 
-3. Start the local services, apply the migrations and start the API:
+Edit `.env`: set `BETTER_AUTH_SECRET` to a random string of 32+ characters (`openssl rand -base64 32`). Google sign-in also needs `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET` (see [Authentication](#authentication)).
+
+3. Start the local services, **apply the database migrations** and start the API:
 
 ```sh
 mise run services    # docker compose up -d
-mise run db:migrate
+mise run db:migrate  # creates the tables (users, sessions...), required before first run
 mise run dev
 ```
+
+The migrations in `drizzle/` are not applied automatically: run `mise run db:migrate` on first setup, after pulling new migrations, and after `mise run services:reset`. Without it, auth requests fail with `relation "user" does not exist`. The tests don't need it, they migrate their own container.
 
 The API runs on http://localhost:3000. Try `curl localhost:3000/health`.
 
