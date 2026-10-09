@@ -14,14 +14,14 @@
 
 Format: `<type>/<JIRA-TICKET>_<short-description>`
 
-| Type        | Usage                                  |
-| ----------- | -------------------------------------- |
-| `feature/`  | New feature                            |
-| `fix/`      | Bug fix                                |
-| `chore/`    | Tooling, config, dependencies, CI      |
-| `docs/`     | Documentation only                     |
-| `refactor/` | Refactoring with no behavior change    |
-| `test/`     | Adding or updating tests               |
+| Type        | Usage                               |
+| ----------- | ----------------------------------- |
+| `feature/`  | New feature                         |
+| `fix/`      | Bug fix                             |
+| `chore/`    | Tooling, config, dependencies, CI   |
+| `docs/`     | Documentation only                  |
+| `refactor/` | Refactoring with no behavior change |
+| `test/`     | Adding or updating tests            |
 
 Examples:
 
