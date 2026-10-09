@@ -137,12 +137,7 @@ Integration tests run against a throwaway PostGIS container (Testcontainers) wit
 
 The Google sign-in flow is tested end to end (`src/auth.google.test.ts`) by faking Google's token endpoint, so no real credentials or network are needed. Test credentials are set in `vitest.config.ts`.
 
-If you use Colima, point Testcontainers at its socket:
-
-```sh
-export DOCKER_HOST=unix://$HOME/.colima/default/docker.sock
-export TESTCONTAINERS_DOCKER_SOCKET_OVERRIDE=/var/run/docker.sock
-```
+Testcontainers uses your active Docker context automatically (Colima, OrbStack and Docker Desktop all work). Set `DOCKER_HOST` yourself to override it.
 
 ## CI
 
