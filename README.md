@@ -55,14 +55,15 @@ The API runs on http://localhost:3000. Try `curl localhost:3000/health`.
 
 Copy `.env.example` to `.env`.
 
-| Variable               | Description                                          |
-| ---------------------- | ---------------------------------------------------- |
-| `PORT`                 | API port (default `3000`)                            |
-| `DATABASE_URL`         | PostgreSQL connection string                         |
-| `BETTER_AUTH_URL`      | Public base URL of the API (used for OAuth callback) |
-| `BETTER_AUTH_SECRET`   | Random string of 32+ characters, signs sessions      |
-| `GOOGLE_CLIENT_ID`     | Google OAuth client ID                               |
-| `GOOGLE_CLIENT_SECRET` | Google OAuth client secret                           |
+| Variable               | Description                                                                         |
+| ---------------------- | ----------------------------------------------------------------------------------- |
+| `PORT`                 | API port (default `3000`)                                                           |
+| `DATABASE_URL`         | PostgreSQL connection string                                                        |
+| `BETTER_AUTH_URL`      | Public base URL of the API (used for OAuth callback)                                |
+| `TRUSTED_ORIGIN`       | Web client origin allowed by CORS and Better Auth (default `http://localhost:5173`) |
+| `BETTER_AUTH_SECRET`   | Random string of 32+ characters, signs sessions                                     |
+| `GOOGLE_CLIENT_ID`     | Google OAuth client ID                                                              |
+| `GOOGLE_CLIENT_SECRET` | Google OAuth client secret                                                          |
 
 ## API contract
 
