@@ -46,7 +46,7 @@ The API runs on http://localhost:3000. Try `curl localhost:3000/health`.
 
 ## API contract
 
-The OpenAPI document is served at http://localhost:3000/openapi.json. Routes are declared with `createRoute` from `@hono/zod-openapi`, so request validation, TypeScript types and the spec all come from the same Zod schemas. The client generates its types from this document.
+The OpenAPI document is served at http://localhost:3000/openapi.json, with interactive docs ([Scalar](https://scalar.com)) at http://localhost:3000/docs. Routes are declared with `createRoute` from `@hono/zod-openapi`, so request validation, TypeScript types and the spec all come from the same Zod schemas. The client generates its types from this document.
 
 Code is organised by bounded context under `src/modules/<context>/`.
 
