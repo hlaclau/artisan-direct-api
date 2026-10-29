@@ -41,6 +41,10 @@ run = "bun run auth:generate"
 description = "Render the database schema diagram to docs/"
 run = "bun run docs:schema"
 
+[tasks."docs:schema:check"]
+description = "Fail if the database schema diagram is out of date"
+run = "bun run docs:schema && git diff --exit-code docs/"
+
 [tasks.build]
 description = "Type-check and build for production"
 run = "bun run build"
@@ -83,4 +87,4 @@ run = "bunx vitest"
 
 [tasks.ci]
 description = "Run every CI check"
-depends = ["lint", "fmt:check", "typecheck", "test", "build"]
+depends = ["lint", "fmt:check", "typecheck", "test", "build", "docs:schema:check"]

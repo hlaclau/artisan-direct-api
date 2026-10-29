@@ -27,6 +27,8 @@ jobs:
             task: test
           - name: Build
             task: build
+          - name: Schema diagram
+            task: docs:schema:check
     env:
       LEFTHOOK: 0
     steps:

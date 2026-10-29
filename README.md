@@ -99,7 +99,7 @@ Schema is in `src/db/schema.ts`, migrations in `drizzle/`.
 - After changing the schema: `mise run db:generate`, then `mise run db:migrate`
 - After changing Better Auth plugins/options: `mise run auth:generate` to refresh the auth tables, then generate a migration
 - Browse the data with `mise run db:studio` (opens https://local.drizzle.studio)
-- After changing the schema, refresh the diagram below with `mise run docs:schema`
+- After changing the schema, refresh the diagram below with `mise run docs:schema` (the pre-commit hook does it for you, CI fails if it's stale)
 
 ![Database schema](docs/database-schema.svg)
 
@@ -109,29 +109,30 @@ The diagram is generated from `src/db/schema.ts` with [Pele](https://github.com/
 
 Run `mise tasks` to list them all.
 
-| Command                   | Description                                         |
-| ------------------------- | --------------------------------------------------- |
-| `mise run auth:generate`  | Regenerate the Drizzle auth schema from src/auth.ts |
-| `mise run build`          | Type-check and build for production                 |
-| `mise run check`          | Lint + format check                                 |
-| `mise run ci`             | Lint, format check, typecheck, tests and build      |
-| `mise run db:generate`    | Generate a SQL migration from the Drizzle schema    |
-| `mise run db:migrate`     | Apply migrations to the local database              |
-| `mise run db:studio`      | Browse the database with Drizzle Studio             |
-| `mise run docs:schema`    | Render the database schema diagram to docs/         |
-| `mise run dev`            | Start the API with hot reload                       |
-| `mise run fmt`            | Format with prettier                                |
-| `mise run fmt:check`      | Check formatting with prettier                      |
-| `mise run install`        | Install dependencies and git hooks                  |
-| `mise run lint`           | Lint with oxlint                                    |
-| `mise run lint:fix`       | Lint and auto-fix with oxlint                       |
-| `mise run services`       | Start local services (PostgreSQL/PostGIS)           |
-| `mise run services:down`  | Stop local services (data is kept)                  |
-| `mise run services:reset` | Stop local services and delete their data           |
-| `mise run start`          | Run the production build                            |
-| `mise run test`           | Run tests once                                      |
-| `mise run test:watch`     | Run tests in watch mode                             |
-| `mise run typecheck`      | Type-check with tsc                                 |
+| Command                      | Description                                                          |
+| ---------------------------- | -------------------------------------------------------------------- |
+| `mise run auth:generate`     | Regenerate the Drizzle auth schema from src/auth.ts                  |
+| `mise run build`             | Type-check and build for production                                  |
+| `mise run check`             | Lint + format check                                                  |
+| `mise run ci`                | Lint, format check, typecheck, tests, build and schema diagram check |
+| `mise run db:generate`       | Generate a SQL migration from the Drizzle schema                     |
+| `mise run db:migrate`        | Apply migrations to the local database                               |
+| `mise run db:studio`         | Browse the database with Drizzle Studio                              |
+| `mise run docs:schema`       | Render the database schema diagram to docs/                          |
+| `mise run docs:schema:check` | Fail if the schema diagram is out of date                            |
+| `mise run dev`               | Start the API with hot reload                                        |
+| `mise run fmt`               | Format with prettier                                                 |
+| `mise run fmt:check`         | Check formatting with prettier                                       |
+| `mise run install`           | Install dependencies and git hooks                                   |
+| `mise run lint`              | Lint with oxlint                                                     |
+| `mise run lint:fix`          | Lint and auto-fix with oxlint                                        |
+| `mise run services`          | Start local services (PostgreSQL/PostGIS)                            |
+| `mise run services:down`     | Stop local services (data is kept)                                   |
+| `mise run services:reset`    | Stop local services and delete their data                            |
+| `mise run start`             | Run the production build                                             |
+| `mise run test`              | Run tests once                                                       |
+| `mise run test:watch`        | Run tests in watch mode                                              |
+| `mise run typecheck`         | Type-check with tsc                                                  |
 
 ## Git hooks
 
