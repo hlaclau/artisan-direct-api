@@ -4,12 +4,9 @@ type Tag = { name: string; description?: string }
 const methods = ['get', 'put', 'post', 'delete', 'patch', 'options', 'head', 'trace']
 const contractSuffix = ' (contract)'
 
-// An operation that still declares a 501 has no handler yet: it only exists in the contract.
 const isContractOnly = (op: Operation) => op.responses !== undefined && '501' in op.responses
 
-// Splits the docs in two groups so implemented routes are not lost among the contract-only ones:
-// tags of routes with a handler stay as they are, tags of routes still answering 501 get a
-// " (contract)" suffix. Implementing a route is enough to move it: drop its 501 response.
+// Routes still declaring a 501 get a " (contract)" tag suffix; dropping the 501 moves them back.
 export function groupByImplementation(paths: Record<string, object>, tags: Tag[]) {
   const implemented = new Set<string>()
   const contractOnly = new Set<string>()

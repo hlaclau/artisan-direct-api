@@ -13,7 +13,6 @@ export const PageMetaSchema = z
   })
   .openapi('PageMeta')
 
-// Envelope for every list: `{ data: [...], meta: { page, pageSize, total } }`.
 export const paginated = <T extends z.ZodType>(item: T, name: string) =>
   z.object({ data: z.array(item), meta: PageMetaSchema }).openapi(name)
 

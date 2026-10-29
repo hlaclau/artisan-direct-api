@@ -15,7 +15,6 @@ const getDoc = async () => {
   return (await res.json()) as Doc
 }
 
-// Public routes: everything else in the inventory requires a session.
 const publicRoutes = [
   'GET /health',
   'GET /api/trades',

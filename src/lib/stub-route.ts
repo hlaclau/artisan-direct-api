@@ -12,8 +12,6 @@ type StubOptions = {
   access?: Access
 }
 
-// A route that is part of the contract but only declares its place and access rules.
-// Payloads are added when the domain is detailed; until then the handler answers 501.
 export function stubRoute({ method, path, tag, summary, access = 'user' }: StubOptions) {
   return createRoute({
     method,

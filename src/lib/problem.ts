@@ -37,7 +37,6 @@ type ProblemStatus = keyof typeof descriptions
 
 const problemContent = { 'application/problem+json': { schema: ProblemSchema } }
 
-// Spread into a route's `responses` to declare its error cases, all in the Problem format.
 export function problemResponses<const T extends ProblemStatus[]>(...statuses: T) {
   return Object.fromEntries(
     statuses.map((status) => [
@@ -47,7 +46,6 @@ export function problemResponses<const T extends ProblemStatus[]>(...statuses: T
   ) as { [K in T[number]]: { description: string; content: typeof problemContent } }
 }
 
-// Placeholder handler: the contract exists, the implementation does not.
 export const notImplemented = (c: Context) => {
   const problem: Problem = {
     type: 'about:blank',

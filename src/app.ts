@@ -44,7 +44,6 @@ app.route('/', paymentsRoutes)
 app.route('/', reviewsRoutes)
 app.route('/', notificationsRoutes)
 
-// Session cookie set by Better Auth; routes opt in with `security: [{ cookieAuth: [] }]`.
 app.openAPIRegistry.registerComponent('securitySchemes', 'cookieAuth', {
   type: 'apiKey',
   in: 'cookie',
