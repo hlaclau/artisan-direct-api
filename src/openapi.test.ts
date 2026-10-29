@@ -15,93 +15,105 @@ const getDoc = async () => {
   return (await res.json()) as Doc
 }
 
-const publicRoutes = [
-  'GET /health',
-  'GET /api/trades',
-  'GET /api/artisans',
-  'GET /api/artisans/{id}',
-  'GET /api/diagnostic/questions',
-  'POST /api/diagnostic',
-  'GET /api/reviews',
-  'GET /api/reviews/{id}',
-]
-
-const detailedRoutes = [
-  'GET /api/me',
-  'PATCH /api/me',
-  'PATCH /api/me/role',
-  'DELETE /api/me',
-  'GET /api/artisans/me',
-  'PATCH /api/artisans/me',
-  'PUT /api/artisans/me/trades',
-  'PUT /api/artisans/me/rates',
-  'GET /api/artisans/me/service-area',
-  'PUT /api/artisans/me/service-area',
-  'GET /api/artisans/me/photos',
-  'POST /api/artisans/me/photos',
-  'DELETE /api/artisans/me/photos/{photoId}',
-  'GET /api/artisans/me/documents',
-  'PUT /api/artisans/me/documents/{type}',
-  'GET /api/admin/artisans',
-  'GET /api/admin/artisans/{id}',
-  'GET /api/admin/artisans/{id}/documents/{documentId}',
-  'POST /api/admin/artisans/{id}/approve',
-  'POST /api/admin/artisans/{id}/reject',
-]
-
-const skeletonRoutes = [
-  'POST /api/interventions',
-  'GET /api/interventions',
-  'GET /api/interventions/{id}',
-  'PATCH /api/interventions/{id}',
-  'DELETE /api/interventions/{id}',
-  'POST /api/interventions/{id}/submissions',
-  'GET /api/interventions/{id}/status',
-  'PATCH /api/interventions/{id}/status',
-  'POST /api/quotes',
-  'GET /api/quotes',
-  'GET /api/quotes/{id}',
-  'PATCH /api/quotes/{id}',
-  'POST /api/quotes/{id}/accept',
-  'POST /api/quotes/{id}/decline',
-  'GET /api/artisans/me/availability',
-  'PUT /api/artisans/me/availability',
-  'POST /api/appointments',
-  'GET /api/appointments',
-  'GET /api/appointments/{id}',
-  'PATCH /api/appointments/{id}',
-  'POST /api/payments',
-  'GET /api/payments',
-  'GET /api/payments/{id}',
-  'POST /api/reviews',
-  'GET /api/notifications',
-  'GET /api/notifications/preferences',
-  'PUT /api/notifications/preferences',
-  'PATCH /api/notifications/{id}',
-]
-
-const inventory = [...publicRoutes, ...detailedRoutes, ...skeletonRoutes]
-const split = (route: string) => {
-  const [method, path] = route.split(' ') as [string, string]
-  return { method: method.toLowerCase(), path }
-}
+// Who can call each route: public, any signed-in user, or a role (adds a 403).
+const inventory = `
+public   GET    /health
+public   GET    /api/trades
+public   GET    /api/artisans
+public   GET    /api/artisans/{id}
+public   GET    /api/diagnostic/questions
+public   POST   /api/diagnostic
+public   GET    /api/reviews
+public   GET    /api/reviews/{id}
+user     GET    /api/me
+user     PATCH  /api/me
+user     PATCH  /api/me/role
+user     DELETE /api/me
+artisan  GET    /api/artisans/me
+artisan  PATCH  /api/artisans/me
+artisan  PUT    /api/artisans/me/trades
+artisan  PUT    /api/artisans/me/rates
+artisan  GET    /api/artisans/me/service-area
+artisan  PUT    /api/artisans/me/service-area
+artisan  GET    /api/artisans/me/photos
+artisan  POST   /api/artisans/me/photos
+artisan  DELETE /api/artisans/me/photos/{photoId}
+artisan  GET    /api/artisans/me/documents
+artisan  PUT    /api/artisans/me/documents/{type}
+artisan  GET    /api/artisans/me/availability
+artisan  PUT    /api/artisans/me/availability
+admin    GET    /api/admin/artisans
+admin    GET    /api/admin/artisans/{id}
+admin    GET    /api/admin/artisans/{id}/documents/{documentId}
+admin    POST   /api/admin/artisans/{id}/approve
+admin    POST   /api/admin/artisans/{id}/reject
+user     POST   /api/interventions
+user     GET    /api/interventions
+user     GET    /api/interventions/{id}
+user     PATCH  /api/interventions/{id}
+user     DELETE /api/interventions/{id}
+user     POST   /api/interventions/{id}/submissions
+user     GET    /api/interventions/{id}/status
+user     PATCH  /api/interventions/{id}/status
+artisan  POST   /api/quotes
+user     GET    /api/quotes
+user     GET    /api/quotes/{id}
+artisan  PATCH  /api/quotes/{id}
+user     POST   /api/quotes/{id}/accept
+user     POST   /api/quotes/{id}/decline
+user     POST   /api/appointments
+user     GET    /api/appointments
+user     GET    /api/appointments/{id}
+user     PATCH  /api/appointments/{id}
+user     POST   /api/payments
+user     GET    /api/payments
+user     GET    /api/payments/{id}
+user     POST   /api/reviews
+user     GET    /api/notifications
+user     GET    /api/notifications/preferences
+user     PUT    /api/notifications/preferences
+user     PATCH  /api/notifications/{id}
+`
+  .trim()
+  .split('\n')
+  .map((line) => {
+    const [access, method, path] = line.trim().split(/\s+/) as [string, string, string]
+    return { access, method: method.toLowerCase(), path }
+  })
 
 describe('openapi document', () => {
   it('documents both the app routes and the auth routes', async () => {
     const doc = await getDoc()
 
-    expect(doc.paths).toHaveProperty('/health')
-    expect(doc.paths).toHaveProperty('/api/auth/sign-up/email')
-    expect(doc.paths).toHaveProperty('/api/auth/sign-in/email')
-    expect(doc.paths).toHaveProperty('/api/auth/sign-in/social')
-    expect(doc.paths).toHaveProperty('/api/auth/get-session')
+    for (const path of [
+      '/api/auth/sign-up/email',
+      '/api/auth/sign-in/email',
+      '/api/auth/sign-in/social',
+      '/api/auth/get-session',
+    ]) {
+      expect(doc.paths).toHaveProperty(path)
+    }
   })
 
-  it.each(inventory)('declares %s', async (route) => {
-    const { method, path } = split(route)
+  it('declares every route of the inventory with its access rules', async () => {
     const doc = await getDoc()
 
-    expect(doc.paths[path]?.[method]).toBeDefined()
+    for (const { access, method, path } of inventory) {
+      const op = doc.paths[path]?.[method]
+      const responses = Object.keys(op?.responses ?? {})
+      const expected = {
+        security: access === 'public' ? undefined : [{ cookieAuth: [] }],
+        has401: access !== 'public',
+        has403: access === 'artisan' || access === 'admin',
+      }
+
+      expect({
+        route: `${method} ${path}`,
+        security: op?.security,
+        has401: responses.includes('401'),
+        has403: responses.includes('403'),
+      }).toEqual({ route: `${method} ${path}`, ...expected })
+    }
   })
 
   it('declares the cookie security scheme and the Problem schema', async () => {
@@ -109,38 +121,6 @@ describe('openapi document', () => {
 
     expect(doc.components.securitySchemes).toHaveProperty('cookieAuth')
     expect(doc.components.schemas).toHaveProperty('Problem')
-  })
-
-  it('declares 401 and the cookie on every protected route', async () => {
-    const doc = await getDoc()
-    const protectedRoutes = inventory.filter((r) => !publicRoutes.includes(r))
-
-    for (const route of protectedRoutes) {
-      const { method, path } = split(route)
-      const op = doc.paths[path]?.[method]
-      expect({ route, security: op?.security }).toEqual({ route, security: [{ cookieAuth: [] }] })
-      expect({ route, has401: op?.responses && '401' in op.responses }).toEqual({
-        route,
-        has401: true,
-      })
-    }
-  })
-
-  it('declares 403 on role-restricted routes', async () => {
-    const doc = await getDoc()
-    const restricted = [
-      ...detailedRoutes.filter((r) => r.includes('/artisans/me') || r.includes('/admin/')),
-      'POST /api/quotes',
-      'PATCH /api/quotes/{id}',
-      'GET /api/artisans/me/availability',
-      'PUT /api/artisans/me/availability',
-    ]
-
-    for (const route of restricted) {
-      const { method, path } = split(route)
-      const responses = doc.paths[path]?.[method]?.responses ?? {}
-      expect({ route, has403: '403' in responses }).toEqual({ route, has403: true })
-    }
   })
 
   it('lists admin artisans with pagination and a status filter', async () => {

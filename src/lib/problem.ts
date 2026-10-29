@@ -33,7 +33,7 @@ const descriptions = {
   501: 'Not implemented yet: the route is part of the contract but has no handler',
 } as const
 
-type ProblemStatus = keyof typeof descriptions
+export type ProblemStatus = keyof typeof descriptions
 
 const problemContent = { 'application/problem+json': { schema: ProblemSchema } }
 

@@ -1,5 +1,6 @@
-import { createRoute, OpenAPIHono, type z } from '@hono/zod-openapi'
-import { notImplemented, problemResponses } from '../../lib/problem.ts'
+import { OpenAPIHono } from '@hono/zod-openapi'
+import { notImplemented } from '../../lib/problem.ts'
+import { jsonBody, ok, route } from '../../lib/route.ts'
 import {
   ArtisanProfileSchema,
   DocumentSchema,
@@ -16,172 +17,140 @@ import {
   UploadBodySchema,
 } from './artisan-profile.schemas.ts'
 
-const tags = ['Artisan']
-const security = [{ cookieAuth: [] }]
-const json = <T extends z.ZodType>(schema: T) => ({ 'application/json': { schema } })
-const upload = { 'multipart/form-data': { schema: UploadBodySchema } }
+const tag = 'Artisan'
+const upload = {
+  required: true as const,
+  content: { 'multipart/form-data': { schema: UploadBodySchema } },
+}
 
-const listTradesRoute = createRoute({
+const listTradesRoute = route({
   method: 'get',
   path: '/api/trades',
-  tags,
+  tag,
+  public: true,
   summary: 'List the trades',
   description: 'Reference list of trades an artisan can pick from. Public.',
-  responses: {
-    200: { description: 'All trades', content: json(TradesListSchema) },
-    ...problemResponses(501),
-  },
+  responses: { 200: ok('All trades', TradesListSchema) },
+  errors: [501],
 })
 
-const getProfileRoute = createRoute({
+const getProfileRoute = route({
   method: 'get',
   path: '/api/artisans/me',
-  tags,
-  security,
+  tag,
   summary: 'Get my artisan profile',
   description: 'Includes the validation status and, if rejected, the reason (ADP-118).',
-  responses: {
-    200: { description: 'My profile', content: json(ArtisanProfileSchema) },
-    ...problemResponses(401, 403, 501),
-  },
+  responses: { 200: ok('My profile', ArtisanProfileSchema) },
+  errors: [403, 501],
 })
 
-const updateProfileRoute = createRoute({
+const updateProfileRoute = route({
   method: 'patch',
   path: '/api/artisans/me',
-  tags,
-  security,
+  tag,
   summary: 'Update my artisan profile',
   description: 'Partial update: SIRET (14 digits), address, phone, description.',
-  request: { body: { required: true, content: json(UpdateArtisanProfileBodySchema) } },
-  responses: {
-    200: { description: 'The updated profile', content: json(ArtisanProfileSchema) },
-    ...problemResponses(400, 401, 403, 501),
-  },
+  request: { body: jsonBody(UpdateArtisanProfileBodySchema) },
+  responses: { 200: ok('The updated profile', ArtisanProfileSchema) },
+  errors: [400, 403, 501],
 })
 
-const setTradesRoute = createRoute({
+const setTradesRoute = route({
   method: 'put',
   path: '/api/artisans/me/trades',
-  tags,
-  security,
+  tag,
   summary: 'Replace my trades',
   description: 'At least one trade is required.',
-  request: { body: { required: true, content: json(SetTradesBodySchema) } },
-  responses: {
-    200: { description: 'My trades', content: json(TradesListSchema) },
-    ...problemResponses(400, 401, 403, 404, 501),
-  },
+  request: { body: jsonBody(SetTradesBodySchema) },
+  responses: { 200: ok('My trades', TradesListSchema) },
+  errors: [400, 403, 404, 501],
 })
 
-const setRatesRoute = createRoute({
+const setRatesRoute = route({
   method: 'put',
   path: '/api/artisans/me/rates',
-  tags,
-  security,
+  tag,
   summary: 'Replace my indicative rates',
-  request: { body: { required: true, content: json(RatesSchema) } },
-  responses: {
-    200: { description: 'My rates', content: json(RatesSchema) },
-    ...problemResponses(400, 401, 403, 501),
-  },
+  request: { body: jsonBody(RatesSchema) },
+  responses: { 200: ok('My rates', RatesSchema) },
+  errors: [400, 403, 501],
 })
 
-const getServiceAreaRoute = createRoute({
+const getServiceAreaRoute = route({
   method: 'get',
   path: '/api/artisans/me/service-area',
-  tags,
-  security,
+  tag,
   summary: 'Get my service area',
-  responses: {
-    200: { description: 'My service area', content: json(ServiceAreaSchema) },
-    ...problemResponses(401, 403, 404, 501),
-  },
+  responses: { 200: ok('My service area', ServiceAreaSchema) },
+  errors: [403, 404, 501],
 })
 
-const setServiceAreaRoute = createRoute({
+const setServiceAreaRoute = route({
   method: 'put',
   path: '/api/artisans/me/service-area',
-  tags,
-  security,
+  tag,
   summary: 'Replace my service area',
   description: 'Starting address and intervention radius in km.',
-  request: { body: { required: true, content: json(ServiceAreaSchema) } },
-  responses: {
-    200: { description: 'My service area', content: json(ServiceAreaSchema) },
-    ...problemResponses(400, 401, 403, 501),
-  },
+  request: { body: jsonBody(ServiceAreaSchema) },
+  responses: { 200: ok('My service area', ServiceAreaSchema) },
+  errors: [400, 403, 501],
 })
 
-const listPhotosRoute = createRoute({
+const listPhotosRoute = route({
   method: 'get',
   path: '/api/artisans/me/photos',
-  tags,
-  security,
+  tag,
   summary: 'List my photos',
-  responses: {
-    200: { description: 'My photos', content: json(PhotosListSchema) },
-    ...problemResponses(401, 403, 501),
-  },
+  responses: { 200: ok('My photos', PhotosListSchema) },
+  errors: [403, 501],
 })
 
-const addPhotoRoute = createRoute({
+const addPhotoRoute = route({
   method: 'post',
   path: '/api/artisans/me/photos',
-  tags,
-  security,
+  tag,
   summary: 'Add a photo',
   description: 'JPEG or PNG. Maximum count and size to be defined: 409 when the count is reached.',
-  request: { body: { required: true, content: upload } },
+  request: { body: upload },
   responses: {
     201: {
-      description: 'The created photo',
+      ...ok('The created photo', PhotoSchema),
       headers: { Location: { schema: { type: 'string' } } },
-      content: json(PhotoSchema),
     },
-    ...problemResponses(400, 401, 403, 409, 413, 415, 501),
   },
+  errors: [400, 403, 409, 413, 415, 501],
 })
 
-const deletePhotoRoute = createRoute({
+const deletePhotoRoute = route({
   method: 'delete',
   path: '/api/artisans/me/photos/{photoId}',
-  tags,
-  security,
+  tag,
   summary: 'Delete a photo',
   request: { params: PhotoIdParamSchema },
-  responses: {
-    204: { description: 'Photo deleted' },
-    ...problemResponses(401, 403, 404, 501),
-  },
+  responses: { 204: { description: 'Photo deleted' } },
+  errors: [403, 404, 501],
 })
 
-const listDocumentsRoute = createRoute({
+const listDocumentsRoute = route({
   method: 'get',
   path: '/api/artisans/me/documents',
-  tags,
-  security,
+  tag,
   summary: 'List my supporting documents',
   description: 'Identity document and insurance certificate (metadata only).',
-  responses: {
-    200: { description: 'My documents', content: json(DocumentsListSchema) },
-    ...problemResponses(401, 403, 501),
-  },
+  responses: { 200: ok('My documents', DocumentsListSchema) },
+  errors: [403, 501],
 })
 
-const putDocumentRoute = createRoute({
+const putDocumentRoute = route({
   method: 'put',
   path: '/api/artisans/me/documents/{type}',
-  tags,
-  security,
+  tag,
   summary: 'Upload or replace a supporting document',
   description:
     'PDF, JPEG or PNG. Replaces the existing document of that type, e.g. a rejected one.',
-  request: { params: DocumentTypeParamSchema, body: { required: true, content: upload } },
-  responses: {
-    200: { description: 'The stored document', content: json(DocumentSchema) },
-    ...problemResponses(400, 401, 403, 413, 415, 501),
-  },
+  request: { params: DocumentTypeParamSchema, body: upload },
+  responses: { 200: ok('The stored document', DocumentSchema) },
+  errors: [400, 403, 413, 415, 501],
 })
 
 export const artisanProfileRoutes = new OpenAPIHono()

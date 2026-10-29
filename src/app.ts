@@ -8,15 +8,8 @@ import { groupByImplementation } from './lib/contract-groups.ts'
 import { accountRoutes } from './modules/account/account.routes.ts'
 import { adminArtisansRoutes } from './modules/admin-artisans/admin-artisans.routes.ts'
 import { artisanProfileRoutes } from './modules/artisan-profile/artisan-profile.routes.ts'
-import { artisanSearchRoutes } from './modules/artisan-search/artisan-search.routes.ts'
-import { diagnosticRoutes } from './modules/diagnostic/diagnostic.routes.ts'
 import { healthRoutes } from './modules/health/health.routes.ts'
-import { interventionsRoutes } from './modules/interventions/interventions.routes.ts'
-import { notificationsRoutes } from './modules/notifications/notifications.routes.ts'
-import { paymentsRoutes } from './modules/payments/payments.routes.ts'
-import { planningRoutes } from './modules/planning/planning.routes.ts'
-import { quotesRoutes } from './modules/quotes/quotes.routes.ts'
-import { reviewsRoutes } from './modules/reviews/reviews.routes.ts'
+import { plannedRoutes } from './modules/planned/planned.routes.ts'
 
 export const app = new OpenAPIHono()
 
@@ -34,15 +27,8 @@ app.route('/', healthRoutes)
 app.route('/', accountRoutes)
 // Registered before the search routes: `/api/artisans/me` must win over `/api/artisans/{id}`.
 app.route('/', artisanProfileRoutes)
-app.route('/', planningRoutes)
-app.route('/', artisanSearchRoutes)
 app.route('/', adminArtisansRoutes)
-app.route('/', diagnosticRoutes)
-app.route('/', interventionsRoutes)
-app.route('/', quotesRoutes)
-app.route('/', paymentsRoutes)
-app.route('/', reviewsRoutes)
-app.route('/', notificationsRoutes)
+app.route('/', plannedRoutes)
 
 app.openAPIRegistry.registerComponent('securitySchemes', 'cookieAuth', {
   type: 'apiKey',

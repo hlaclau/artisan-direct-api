@@ -1,64 +1,51 @@
-import { createRoute, OpenAPIHono, type z } from '@hono/zod-openapi'
-import { notImplemented, problemResponses } from '../../lib/problem.ts'
+import { OpenAPIHono } from '@hono/zod-openapi'
+import { notImplemented } from '../../lib/problem.ts'
+import { jsonBody, ok, route } from '../../lib/route.ts'
 import { ChooseRoleBodySchema, MeSchema, UpdateMeBodySchema } from './account.schemas.ts'
 
-const tags = ['Account']
-const security = [{ cookieAuth: [] }]
-const json = <T extends z.ZodType>(schema: T) => ({ 'application/json': { schema } })
+const tag = 'Account'
 
-const getMeRoute = createRoute({
+const getMeRoute = route({
   method: 'get',
   path: '/api/me',
-  tags,
-  security,
+  tag,
   summary: 'Get the signed-in user',
   description: 'User, role and, for an artisan, the validation status.',
-  responses: {
-    200: { description: 'The signed-in user', content: json(MeSchema) },
-    ...problemResponses(401, 501),
-  },
+  responses: { 200: ok('The signed-in user', MeSchema) },
+  errors: [501],
 })
 
-const updateMeRoute = createRoute({
+const updateMeRoute = route({
   method: 'patch',
   path: '/api/me',
-  tags,
-  security,
+  tag,
   summary: 'Update the signed-in user',
   description: 'Partial update of first and last name. The role cannot be changed here.',
-  request: { body: { required: true, content: json(UpdateMeBodySchema) } },
-  responses: {
-    200: { description: 'The updated user', content: json(MeSchema) },
-    ...problemResponses(400, 401, 501),
-  },
+  request: { body: jsonBody(UpdateMeBodySchema) },
+  responses: { 200: ok('The updated user', MeSchema) },
+  errors: [400, 501],
 })
 
-const chooseRoleRoute = createRoute({
+const chooseRoleRoute = route({
   method: 'patch',
   path: '/api/me/role',
-  tags,
-  security,
+  tag,
   summary: 'Choose the account role (once)',
   description:
     'Only for a signed-in user without a role. `admin` can never be chosen. Answers 409 if a role is already set.',
-  request: { body: { required: true, content: json(ChooseRoleBodySchema) } },
-  responses: {
-    200: { description: 'The user with its new role', content: json(MeSchema) },
-    ...problemResponses(400, 401, 409, 501),
-  },
+  request: { body: jsonBody(ChooseRoleBodySchema) },
+  responses: { 200: ok('The user with its new role', MeSchema) },
+  errors: [400, 409, 501],
 })
 
-const deleteMeRoute = createRoute({
+const deleteMeRoute = route({
   method: 'delete',
   path: '/api/me',
-  tags,
-  security,
+  tag,
   summary: 'Delete the signed-in account',
   description: 'The last admin account cannot be deleted (409).',
-  responses: {
-    204: { description: 'Account deleted' },
-    ...problemResponses(401, 409, 501),
-  },
+  responses: { 204: { description: 'Account deleted' } },
+  errors: [409, 501],
 })
 
 export const accountRoutes = new OpenAPIHono()
