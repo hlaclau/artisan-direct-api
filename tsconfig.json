@@ -5,6 +5,7 @@
     "module": "esnext",
     "types": ["bun"],
     "skipLibCheck": true,
+    "resolveJsonModule": true,
 
     /* Bundler mode */
     "moduleResolution": "bundler",
