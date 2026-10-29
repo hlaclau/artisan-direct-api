@@ -27,6 +27,8 @@ jobs:
             task: test
           - name: Build
             task: build
+          - name: Schema diagram
+            task: docs:schema:check
     env:
       LEFTHOOK: 0
     steps:
@@ -34,3 +36,26 @@ jobs:
       - uses: jdx/mise-action@v5
       - run: bun install --frozen-lockfile
       - run: mise run ${{ matrix.task }}
+
+  coverage:
+    name: Coverage
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+    env:
+      LEFTHOOK: 0
+    steps:
+      - uses: actions/checkout@v7
+      - uses: jdx/mise-action@v5
+      - run: bun install --frozen-lockfile
+      - name: Run tests with coverage
+        run: mise run test:coverage
+      - name: Publish coverage report
+        if: always()
+        uses: davelosert/vitest-coverage-report-action@8f86cfb56ed6d5613ea8cdc5259f207fbfd51ece # v2.13.1
+        # fork PRs get a read-only token and cannot comment
+        continue-on-error: true
+        with:
+          threshold-icons: "{0: '🔴', 50: '🟠', 70: '🟡', 80: '🟢'}"
+          name: 'Coverage Report · 🔴 under 50% · 🟠 50-69% · 🟡 70-79% · 🟢 80%+'
