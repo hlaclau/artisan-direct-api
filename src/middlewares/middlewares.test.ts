@@ -28,7 +28,7 @@ const post = (path: string, body: unknown) =>
 const createSessionCookie = async (role: Role) => {
   const email = emails[role]
 
-  await post('/sign-up/email', { email, password, name: role })
+  await post('/sign-up/email', { email, password, name: role, signupRole: 'customer' })
   await db.update(user).set({ role }).where(eq(user.email, email))
 
   const res = await post('/sign-in/email', { email, password })
