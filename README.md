@@ -67,9 +67,35 @@ Copy `.env.example` to `.env`.
 
 ## API contract
 
-The OpenAPI document is served at http://localhost:3000/openapi.json, with interactive docs ([Scalar](https://scalar.com)) at http://localhost:3000/docs. The Better Auth endpoints (`/api/auth/*`) are merged into the same document, under the **Auth** tag. Routes are declared with `createRoute` from `@hono/zod-openapi`, so request validation, TypeScript types and the spec all come from the same Zod schemas. The client generates its types from this document.
+The contract lives in this repository, in code: routes are declared with `createRoute` from `@hono/zod-openapi`, so request validation, TypeScript types and the OpenAPI document all come from the same Zod schemas. The client generates its types from the document.
 
-Code is organised by bounded context under `src/modules/<context>/`.
+- OpenAPI document: http://localhost:3000/openapi.json
+- Interactive docs ([Scalar](https://scalar.com)): http://localhost:3000/docs, routes grouped by tag (Auth, Account, Artisan, Admin, …)
+- The Better Auth endpoints (`/api/auth/*`) are merged into the same document, under the **Auth** tag
+
+Code is organised by bounded context under `src/modules/<context>/` (`*.schemas.ts` for Zod schemas, `*.routes.ts` for routes). Shared building blocks are in `src/lib/` (`problem.ts`, `pagination.ts`, `stub-route.ts`).
+
+### Conventions
+
+- Base path `/api`, plural resource names, JSON in camelCase, no verbs in URLs (assumed exception: `approve` / `reject` on artisans). `/api/me` is the signed-in user, `/api/admin/*` requires the admin role.
+- Authentication: the Better Auth session cookie (`credentials: 'include'`), declared as the `cookieAuth` security scheme. No `Authorization` header.
+- Status codes: `200` read/update, `201` creation (with `Location`), `204` deletion, `400` validation, `401` not signed in, `403` wrong role or someone else's resource, `404`, `409` conflict, `413`/`415` upload, `429`, `500`.
+- Errors: `application/problem+json` ([RFC 9457](https://www.rfc-editor.org/rfc/rfc9457)), a single `Problem` schema: `{ type, title, status, detail?, errors?: [{ field, message }] }`. Declare them with `problemResponses(...)` from `src/lib/problem.ts`.
+- Lists: `?page&pageSize` (default 1 / 20, max 100) and the envelope `{ data: [], meta: { page, pageSize, total } }` (`paginated()` in `src/lib/pagination.ts`). Filters are query parameters, e.g. `?status=pending`.
+- Updates: `PATCH` is partial, `PUT` replaces a sub-resource idempotently. Uploads are `multipart/form-data` (PDF, JPEG, PNG).
+- No version in the URL for now (a single consumer); to be revisited if the API becomes public.
+
+### Not implemented yet
+
+A route answering **501** in the `Problem` format is part of the contract but has no handler yet (`notImplemented` in `src/lib/problem.ts`). Domains still to be detailed are declared as skeletons with `stubRoute` (tag, summary, access rules, no payloads): search, diagnostic, interventions, quotes, planning, payments, reviews and notifications.
+
+### Proposing a change to the contract
+
+1. Branch `docs/<TICKET>_<description>` (see [CONTRIBUTING.md](CONTRIBUTING.md))
+2. Edit the schemas and routes in `src/modules/<context>/`; replace a `stubRoute` by a detailed `createRoute` when detailing a domain
+3. Update the route inventory in `src/openapi.test.ts`
+4. Check the result on `/docs`, then run `bun run lint`, `bun run fmt:check`, `bun run typecheck` and `bun run test`
+5. Open a PR and ask the front-end for a review: the contract is agreed before the handlers are written
 
 ## Authentication
 
