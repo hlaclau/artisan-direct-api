@@ -3,6 +3,8 @@ import { app } from './app.ts'
 
 type Operation = { tags?: string[]; security?: unknown[]; responses: Record<string, unknown> }
 type Doc = {
+  tags: { name: string }[]
+  'x-tagGroups': { name: string; tags: string[] }[]
   paths: Record<string, Record<string, Operation>>
   components: { schemas: Record<string, unknown>; securitySchemes: Record<string, unknown> }
 }
@@ -151,6 +153,28 @@ describe('openapi document', () => {
     expect(op.parameters.map((p) => p.name)).toEqual(
       expect.arrayContaining(['page', 'pageSize', 'status']),
     )
+  })
+})
+
+describe('implemented vs contract-only grouping', () => {
+  it('lists routes with a handler apart from routes still answering 501', async () => {
+    const doc = await getDoc()
+    const [implemented, contractOnly] = doc['x-tagGroups']
+
+    expect(implemented?.tags).toEqual(expect.arrayContaining(['Auth', 'health']))
+    expect(implemented?.tags).not.toContain('Account')
+    expect(contractOnly?.tags).toEqual(
+      expect.arrayContaining(['Account (contract)', 'Admin (contract)', 'Quotes (contract)']),
+    )
+    expect(contractOnly?.tags).not.toContain('Auth (contract)')
+  })
+
+  it('tags every contract-only operation with the suffixed tag', async () => {
+    const doc = await getDoc()
+
+    expect(doc.paths['/api/me']?.get?.tags).toEqual(['Account (contract)'])
+    expect(doc.paths['/health']?.get?.tags).toEqual(['health'])
+    expect(doc.paths['/api/auth/get-session']?.get?.tags).toEqual(['Auth'])
   })
 })
 

@@ -4,6 +4,7 @@ import { cors } from 'hono/cors'
 import { logger } from 'hono/logger'
 import { auth } from './auth.ts'
 import { trustedOrigin } from './config.ts'
+import { groupByImplementation } from './lib/contract-groups.ts'
 import { accountRoutes } from './modules/account/account.routes.ts'
 import { adminArtisansRoutes } from './modules/admin-artisans/admin-artisans.routes.ts'
 import { artisanProfileRoutes } from './modules/artisan-profile/artisan-profile.routes.ts'
@@ -50,6 +51,22 @@ app.openAPIRegistry.registerComponent('securitySchemes', 'cookieAuth', {
   name: 'better-auth.session_token',
 })
 
+const tags = [
+  { name: 'Auth', description: 'Sign-up, sign-in and session (Better Auth)' },
+  { name: 'Account', description: 'The signed-in user: profile, role, deletion' },
+  { name: 'Artisan', description: 'The artisan profile and its supporting documents' },
+  { name: 'Admin', description: 'Admin only: artisan validation' },
+  { name: 'Search', description: 'Public artisan search and profiles' },
+  { name: 'Diagnostic' },
+  { name: 'Interventions' },
+  { name: 'Quotes' },
+  { name: 'Planning' },
+  { name: 'Payments' },
+  { name: 'Reviews' },
+  { name: 'Notifications' },
+  { name: 'health' },
+]
+
 const authBasePath = '/api/auth'
 let authSchema: ReturnType<typeof auth.api.generateOpenAPISchema> | undefined
 
@@ -66,24 +83,9 @@ app.get('/openapi.json', async (c) => {
         '- Auth: session cookie set by Better Auth (`credentials: include`), no Authorization header.',
         '- Errors: `application/problem+json` (RFC 9457), see the `Problem` schema.',
         '- Lists: `?page&pageSize` and `{ data, meta: { page, pageSize, total } }`.',
-        '- Routes answering 501 are part of the contract but not implemented yet.',
+        '- Routes answering 501 are part of the contract but not implemented yet: they are listed under "Contract only".',
       ].join('\n'),
     },
-    tags: [
-      { name: 'Auth', description: 'Sign-up, sign-in and session (Better Auth)' },
-      { name: 'Account', description: 'The signed-in user: profile, role, deletion' },
-      { name: 'Artisan', description: 'The artisan profile and its supporting documents' },
-      { name: 'Admin', description: 'Admin only: artisan validation' },
-      { name: 'Search', description: 'Public artisan search and profiles' },
-      { name: 'Diagnostic' },
-      { name: 'Interventions' },
-      { name: 'Quotes' },
-      { name: 'Planning' },
-      { name: 'Payments' },
-      { name: 'Reviews' },
-      { name: 'Notifications' },
-      { name: 'health' },
-    ],
   })
   authSchema ??= auth.api.generateOpenAPISchema()
   const { paths, components } = await authSchema
@@ -100,9 +102,11 @@ app.get('/openapi.json', async (c) => {
     ]),
   )
 
+  const grouped = groupByImplementation({ ...doc.paths, ...authPaths }, tags)
+
   return c.json({
     ...doc,
-    paths: { ...doc.paths, ...authPaths },
+    ...grouped,
     components: {
       ...doc.components,
       schemas: { ...doc.components?.schemas, ...components?.schemas },

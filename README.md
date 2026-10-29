@@ -87,6 +87,8 @@ Code is organised by bounded context under `src/modules/<context>/` (`*.schemas.
 
 ### Not implemented yet
 
+In `/docs`, the sidebar has two groups: **Implemented** (routes with a handler, plus Auth) and **Contract only (not implemented)**, whose tags carry a ` (contract)` suffix. The split is automatic: a route is contract-only as long as it declares a 501 response. To move a route to _Implemented_, write its handler and remove `501` from its `problemResponses(...)`.
+
 A route answering **501** in the `Problem` format is part of the contract but has no handler yet (`notImplemented` in `src/lib/problem.ts`). Domains still to be detailed are declared as skeletons with `stubRoute` (tag, summary, access rules, no payloads): search, diagnostic, interventions, quotes, planning, payments, reviews and notifications.
 
 ### Proposing a change to the contract
