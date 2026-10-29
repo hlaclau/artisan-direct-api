@@ -99,6 +99,11 @@ Schema is in `src/db/schema.ts`, migrations in `drizzle/`.
 - After changing the schema: `mise run db:generate`, then `mise run db:migrate`
 - After changing Better Auth plugins/options: `mise run auth:generate` to refresh the auth tables, then generate a migration
 - Browse the data with `mise run db:studio` (opens https://local.drizzle.studio)
+- After changing the schema, refresh the diagram below with `mise run docs:schema`
+
+![Database schema](docs/database-schema.svg)
+
+The diagram is generated from `src/db/schema.ts` with [Pele](https://github.com/obsidianmd/pele) (`scripts/render-db-schema.ts`).
 
 ## Tasks
 
@@ -113,6 +118,7 @@ Run `mise tasks` to list them all.
 | `mise run db:generate`    | Generate a SQL migration from the Drizzle schema    |
 | `mise run db:migrate`     | Apply migrations to the local database              |
 | `mise run db:studio`      | Browse the database with Drizzle Studio             |
+| `mise run docs:schema`    | Render the database schema diagram to docs/         |
 | `mise run dev`            | Start the API with hot reload                       |
 | `mise run fmt`            | Format with prettier                                |
 | `mise run fmt:check`      | Check formatting with prettier                      |
