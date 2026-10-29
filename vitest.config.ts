@@ -6,6 +6,12 @@ export default defineConfig({
     globalSetup: ['src/test/global-setup.ts'],
     testTimeout: 15_000,
     hookTimeout: 120_000,
+    coverage: {
+      provider: 'v8',
+      reporter: ['text', 'lcov'],
+      include: ['src/**/*.ts'],
+      exclude: ['src/**/*.test.ts', 'src/test/**'],
+    },
     env: {
       BETTER_AUTH_URL: 'http://localhost:3000',
       GOOGLE_CLIENT_ID: 'test-google-client-id',

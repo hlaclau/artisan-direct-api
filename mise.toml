@@ -77,6 +77,10 @@ run = "bunx vitest run"
 description = "Run tests in watch mode"
 run = "bunx vitest"
 
+[tasks."test:coverage"]
+description = "Run tests once with code coverage (text + lcov in coverage/)"
+run = "bunx vitest run --coverage"
+
 [tasks.ci]
 description = "Run every CI check"
 depends = ["lint", "fmt:check", "typecheck", "test", "build"]

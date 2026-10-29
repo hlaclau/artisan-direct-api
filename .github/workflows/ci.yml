@@ -34,3 +34,29 @@ jobs:
       - uses: jdx/mise-action@v5
       - run: bun install --frozen-lockfile
       - run: mise run ${{ matrix.task }}
+
+  coverage:
+    name: Coverage
+    runs-on: ubuntu-latest
+    env:
+      LEFTHOOK: 0
+    steps:
+      - uses: actions/checkout@v7
+      - uses: jdx/mise-action@v5
+      - run: bun install --frozen-lockfile
+      - run: mise run test:coverage | tee coverage.txt
+        shell: bash
+      - name: Publish coverage to job summary
+        if: always()
+        run: |
+          {
+            echo '## Code coverage'
+            echo '```'
+            cat coverage.txt
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: coverage
+          path: coverage/
