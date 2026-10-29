@@ -8,6 +8,10 @@ pre-commit:
       glob: '*.{js,jsx,ts,tsx,mjs,cjs,json,css,html,md,yml,yaml}'
       run: bunx prettier --write --ignore-unknown {staged_files}
       stage_fixed: true
+    schema:
+      glob: 'src/db/schema.ts'
+      run: bun run docs:schema
+      stage_fixed: true
 
 commit-msg:
   commands:
