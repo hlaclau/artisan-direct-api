@@ -37,6 +37,10 @@ run = "bun run db:studio"
 description = "Regenerate the Drizzle auth schema from src/auth.ts"
 run = "bun run auth:generate"
 
+[tasks."db:seed:admin"]
+description = "Create and seed an admin account"
+run = "bun run db:seed:admin"
+
 [tasks."docs:schema"]
 description = "Render the database schema diagram to docs/"
 run = "bun run docs:schema"
