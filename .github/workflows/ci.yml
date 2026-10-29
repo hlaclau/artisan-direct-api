@@ -49,40 +49,13 @@ jobs:
       - uses: actions/checkout@v7
       - uses: jdx/mise-action@v5
       - run: bun install --frozen-lockfile
-      - run: mise run test:coverage | tee coverage.txt
-        shell: bash
-      - name: Publish coverage to job summary
+      - name: Run tests with coverage
+        run: mise run test:coverage
+      - name: Publish coverage report
         if: always()
-        run: |
-          {
-            echo '## Code coverage'
-            echo '```'
-            cat coverage.txt
-            echo '```'
-          } >> "$GITHUB_STEP_SUMMARY"
-      - name: Post coverage on the pull request
-        if: always() && github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository
-        uses: actions/github-script@v7
+        uses: davelosert/vitest-coverage-report-action@8f86cfb56ed6d5613ea8cdc5259f207fbfd51ece # v2.13.1
+        # fork PRs get a read-only token and cannot comment
+        continue-on-error: true
         with:
-          script: |
-            const fs = require('fs')
-            const marker = '<!-- coverage-report -->'
-            const body = `${marker}\n## Code coverage\n\n\`\`\`\n${fs.readFileSync('coverage.txt', 'utf8')}\n\`\`\``
-            const { owner, repo } = context.repo
-            const issue_number = context.issue.number
-            const comments = await github.paginate(github.rest.issues.listComments, {
-              owner,
-              repo,
-              issue_number,
-            })
-            const existing = comments.find((c) => c.body?.startsWith(marker))
-            if (existing) {
-              await github.rest.issues.updateComment({ owner, repo, comment_id: existing.id, body })
-            } else {
-              await github.rest.issues.createComment({ owner, repo, issue_number, body })
-            }
-      - uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: coverage
-          path: coverage/
+          threshold-icons: "{0: '🔴', 50: '🟠', 70: '🟡', 80: '🟢'}"
+          name: 'Coverage Report · 🔴 under 50% · 🟠 50-69% · 🟡 70-79% · 🟢 80%+'

@@ -131,7 +131,7 @@ Run `mise tasks` to list them all.
 | `mise run services:reset`    | Stop local services and delete their data                            |
 | `mise run start`             | Run the production build                                             |
 | `mise run test`              | Run tests once                                                       |
-| `mise run test:coverage`     | Run tests once with coverage (text + lcov)                           |
+| `mise run test:coverage`     | Run tests once with coverage (text, lcov, json)                      |
 | `mise run test:watch`        | Run tests in watch mode                                              |
 | `mise run typecheck`         | Type-check with tsc                                                  |
 

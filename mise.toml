@@ -86,7 +86,7 @@ description = "Run tests in watch mode"
 run = "bunx vitest"
 
 [tasks."test:coverage"]
-description = "Run tests once with code coverage (text + lcov in coverage/)"
+description = "Run tests once with coverage (text, lcov, json)"
 run = "bunx vitest run --coverage"
 
 [tasks.ci]

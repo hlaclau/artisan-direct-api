@@ -8,7 +8,7 @@ export default defineConfig({
     hookTimeout: 120_000,
     coverage: {
       provider: 'v8',
-      reporter: ['text', 'lcov'],
+      reporter: ['text', 'lcov', 'json-summary', 'json'],
       // Untested files matching `include` are still reported (at 0%)
       include: ['src/**'],
       exclude: [
