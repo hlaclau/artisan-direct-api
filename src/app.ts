@@ -4,6 +4,7 @@ import { cors } from 'hono/cors'
 import { logger } from 'hono/logger'
 import { auth } from './auth.ts'
 import { trustedOrigin } from './config.ts'
+import planned from '../contracts/planned.json'
 import { healthRoutes } from './modules/health/health.routes.ts'
 
 export const app = new OpenAPIHono()
@@ -55,10 +56,16 @@ app.get('/openapi.json', async (c) => {
   })
 })
 
+// Routes agreed with the front but not implemented yet. A route moves to the code once it ships.
+app.get('/openapi-planned.json', (c) => c.json(planned))
+
 app.get(
   '/docs',
   Scalar({
-    url: '/openapi.json',
+    sources: [
+      { title: 'Implemented', slug: 'implemented', url: '/openapi.json', default: true },
+      { title: 'Planned (contracts)', slug: 'planned', url: '/openapi-planned.json' },
+    ],
     pageTitle: 'ArtisansDirect API',
     theme: 'deepSpace',
     defaultHttpClient: { targetKey: 'js', clientKey: 'fetch' },

@@ -1,0 +1,4940 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "ArtisansDirect API",
+    "version": "0.0.0",
+    "description": "Reference contract between the ArtisansDirect back and front.\n\n- Auth: session cookie set by Better Auth (`credentials: include`), no Authorization header.\n- Errors: `application/problem+json` (RFC 9457), see the `Problem` schema.\n- Lists: `?page&pageSize` and `{ data, meta: { page, pageSize, total } }`.\n- Planned contract: these routes are agreed but not implemented yet. A route moves to the code (and to the Implemented docs) once it ships.\n"
+  },
+  "servers": [
+    {
+      "url": "http://localhost:3000"
+    }
+  ],
+  "tags": [
+    {
+      "name": "Account",
+      "description": "The signed-in user: profile, role, deletion"
+    },
+    {
+      "name": "Artisan",
+      "description": "The artisan profile and its supporting documents"
+    },
+    {
+      "name": "Admin",
+      "description": "Admin only: artisan validation"
+    },
+    {
+      "name": "Search",
+      "description": "Public artisan search and profiles"
+    },
+    {
+      "name": "Diagnostic",
+      "description": "Guided questions that suggest a trade"
+    },
+    {
+      "name": "Interventions",
+      "description": "Client requests, from draft to completion"
+    },
+    {
+      "name": "Quotes",
+      "description": "Artisan quotes and the client decision"
+    },
+    {
+      "name": "Planning",
+      "description": "Artisan availability and appointments"
+    },
+    {
+      "name": "Payments",
+      "description": "Payment of a completed intervention"
+    },
+    {
+      "name": "Reviews",
+      "description": "Client reviews of artisans"
+    },
+    {
+      "name": "Notifications",
+      "description": "In-app notifications and preferences"
+    }
+  ],
+  "paths": {
+    "/api/trades": {
+      "get": {
+        "tags": ["Artisan"],
+        "operationId": "listTrades",
+        "summary": "List the trades",
+        "description": "Reference list of trades an artisan can pick from. Public.",
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "All trades",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TradesList"
+                }
+              }
+            }
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        }
+      }
+    },
+    "/api/me": {
+      "get": {
+        "tags": ["Account"],
+        "operationId": "getMe",
+        "summary": "Get the signed-in user",
+        "description": "User, role and, for an artisan, the validation status.",
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The signed-in user",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Me"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        }
+      },
+      "patch": {
+        "tags": ["Account"],
+        "operationId": "updateMe",
+        "summary": "Update the signed-in user",
+        "description": "Partial update of first and last name. The role cannot be changed here.",
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "requestBody": {
+          "$ref": "#/components/requestBodies/UpdateMe"
+        },
+        "responses": {
+          "200": {
+            "description": "The updated user",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Me"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        }
+      },
+      "delete": {
+        "tags": ["Account"],
+        "operationId": "deleteMe",
+        "summary": "Delete the signed-in account",
+        "description": "The last admin account cannot be deleted (409).",
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Account deleted"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        }
+      }
+    },
+    "/api/me/role": {
+      "patch": {
+        "tags": ["Account"],
+        "operationId": "chooseRole",
+        "summary": "Choose the account role (once)",
+        "description": "Only for a signed-in user without a role. `admin` can never be chosen. Answers 409 if a role is already set.",
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "requestBody": {
+          "$ref": "#/components/requestBodies/ChooseRole"
+        },
+        "responses": {
+          "200": {
+            "description": "The user with its new role",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Me"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        }
+      }
+    },
+    "/api/artisans/me": {
+      "get": {
+        "tags": ["Artisan"],
+        "operationId": "getArtisanProfile",
+        "summary": "Get my artisan profile",
+        "description": "Includes the validation status and, if rejected, the reason (ADP-118).",
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "My profile",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ArtisanProfile"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        }
+      },
+      "patch": {
+        "tags": ["Artisan"],
+        "operationId": "updateArtisanProfile",
+        "summary": "Update my artisan profile",
+        "description": "Partial update: SIRET (14 digits), address, phone, description.",
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "requestBody": {
+          "$ref": "#/components/requestBodies/UpdateArtisanProfile"
+        },
+        "responses": {
+          "200": {
+            "description": "The updated profile",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ArtisanProfile"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        }
+      }
+    },
+    "/api/artisans/me/trades": {
+      "put": {
+        "tags": ["Artisan"],
+        "operationId": "setArtisanTrades",
+        "summary": "Replace my trades",
+        "description": "At least one trade is required.",
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SetTradesBody"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "My trades",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TradesList"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        }
+      }
+    },
+    "/api/artisans/me/rates": {
+      "put": {
+        "tags": ["Artisan"],
+        "operationId": "setArtisanRates",
+        "summary": "Replace my indicative rates",
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Rates"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "My rates",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Rates"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        }
+      }
+    },
+    "/api/artisans/me/service-area": {
+      "get": {
+        "tags": ["Artisan"],
+        "operationId": "getServiceArea",
+        "summary": "Get my service area",
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "My service area",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ServiceArea"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        }
+      },
+      "put": {
+        "tags": ["Artisan"],
+        "operationId": "setServiceArea",
+        "summary": "Replace my service area",
+        "description": "Starting address and intervention radius in km.",
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ServiceArea"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "My service area",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ServiceArea"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        }
+      }
+    },
+    "/api/artisans/me/photos": {
+      "get": {
+        "tags": ["Artisan"],
+        "operationId": "listPhotos",
+        "summary": "List my photos",
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "My photos",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PhotosList"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        }
+      },
+      "post": {
+        "tags": ["Artisan"],
+        "operationId": "addPhoto",
+        "summary": "Add a photo",
+        "description": "JPEG or PNG, 5 MB maximum, 10 photos per artisan: 409 when the count is reached.",
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "requestBody": {
+          "$ref": "#/components/requestBodies/Upload"
+        },
+        "responses": {
+          "201": {
+            "description": "The created photo",
+            "headers": {
+              "Location": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ArtisanPhoto"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "413": {
+            "$ref": "#/components/responses/PayloadTooLarge"
+          },
+          "415": {
+            "$ref": "#/components/responses/UnsupportedMediaType"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        }
+      }
+    },
+    "/api/artisans/me/photos/{photoId}": {
+      "parameters": [
+        {
+          "name": "photoId",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "format": "uuid"
+          }
+        }
+      ],
+      "delete": {
+        "tags": ["Artisan"],
+        "operationId": "deletePhoto",
+        "summary": "Delete a photo",
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Photo deleted"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        }
+      }
+    },
+    "/api/artisans/me/documents": {
+      "get": {
+        "tags": ["Artisan"],
+        "operationId": "listDocuments",
+        "summary": "List my supporting documents",
+        "description": "Identity document and insurance certificate (metadata only).",
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "My documents",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DocumentsList"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        }
+      }
+    },
+    "/api/artisans/me/documents/{type}": {
+      "parameters": [
+        {
+          "name": "type",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "$ref": "#/components/schemas/DocumentType"
+          }
+        }
+      ],
+      "put": {
+        "tags": ["Artisan"],
+        "operationId": "putDocument",
+        "summary": "Upload or replace a supporting document",
+        "description": "PDF, JPEG or PNG. Replaces the existing document of that type, e.g. a rejected one.",
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "requestBody": {
+          "$ref": "#/components/requestBodies/Upload"
+        },
+        "responses": {
+          "200": {
+            "description": "The stored document",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ArtisanDocument"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "413": {
+            "$ref": "#/components/responses/PayloadTooLarge"
+          },
+          "415": {
+            "$ref": "#/components/responses/UnsupportedMediaType"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        }
+      }
+    },
+    "/api/admin/artisans": {
+      "get": {
+        "tags": ["Admin"],
+        "operationId": "adminListArtisans",
+        "summary": "List artisans to validate",
+        "description": "Paginated, filterable by validation status (ADP-47).",
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/Page"
+          },
+          {
+            "$ref": "#/components/parameters/PageSize"
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "schema": {
+              "$ref": "#/components/schemas/ValidationStatus"
+            },
+            "example": "pending"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A page of artisans",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": ["data", "meta"],
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/AdminArtisanSummary"
+                      }
+                    },
+                    "meta": {
+                      "$ref": "#/components/schemas/PageMeta"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        }
+      }
+    },
+    "/api/admin/artisans/{id}": {
+      "parameters": [
+        {
+          "$ref": "#/components/parameters/Id"
+        }
+      ],
+      "get": {
+        "tags": ["Admin"],
+        "operationId": "adminGetArtisan",
+        "summary": "Get an artisan with their documents",
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Artisan detail",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminArtisanDetail"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        }
+      }
+    },
+    "/api/admin/artisans/{id}/documents/{documentId}": {
+      "parameters": [
+        {
+          "$ref": "#/components/parameters/Id"
+        },
+        {
+          "name": "documentId",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "format": "uuid"
+          }
+        }
+      ],
+      "get": {
+        "tags": ["Admin"],
+        "operationId": "adminDownloadDocument",
+        "summary": "Download a supporting document",
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The file",
+            "content": {
+              "application/pdf": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              },
+              "image/jpeg": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              },
+              "image/png": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        }
+      }
+    },
+    "/api/admin/artisans/{id}/approve": {
+      "parameters": [
+        {
+          "$ref": "#/components/parameters/Id"
+        }
+      ],
+      "post": {
+        "tags": ["Admin"],
+        "operationId": "adminApproveArtisan",
+        "summary": "Approve an artisan",
+        "description": "Answers 409 if the artisan was already approved or rejected.",
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The approved artisan",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminArtisanDetail"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        }
+      }
+    },
+    "/api/admin/artisans/{id}/reject": {
+      "parameters": [
+        {
+          "$ref": "#/components/parameters/Id"
+        }
+      ],
+      "post": {
+        "tags": ["Admin"],
+        "operationId": "adminRejectArtisan",
+        "summary": "Reject an artisan",
+        "description": "A reason is required and shown to the artisan. Answers 409 if already decided.",
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RejectBody"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The rejected artisan",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminArtisanDetail"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        }
+      }
+    },
+    "/api/artisans": {
+      "get": {
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "A page of artisans",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ArtisanSummaryList"
+                },
+                "example": {
+                  "data": [
+                    {
+                      "id": "0b8f2c1e-5a3d-4c7e-9f10-000000000004",
+                      "displayName": "Jean Dupont",
+                      "description": "Plombier depuis 15 ans",
+                      "city": "Lyon",
+                      "trades": [
+                        {
+                          "id": "0b8f2c1e-5a3d-4c7e-9f10-000000000002",
+                          "slug": "plumber",
+                          "name": "Plombier"
+                        }
+                      ],
+                      "rates": {
+                        "hourlyRate": 55,
+                        "travelFee": 20
+                      },
+                      "ratingAverage": 4.6,
+                      "reviewCount": 18,
+                      "distanceKm": 4.2
+                    }
+                  ],
+                  "meta": {
+                    "page": 1,
+                    "pageSize": 20,
+                    "total": 1
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        },
+        "tags": ["Search"],
+        "operationId": "searchArtisans",
+        "summary": "Search artisans (filters, sort, pagination, geolocation)",
+        "description": "Public. Only validated artisans are returned. With `lat` and `lng`, results get a `distanceKm` and only artisans whose service area covers the point are kept.",
+        "parameters": [
+          {
+            "name": "trade",
+            "in": "query",
+            "description": "Trade slug",
+            "schema": {
+              "type": "string"
+            },
+            "example": "plumber"
+          },
+          {
+            "name": "q",
+            "in": "query",
+            "description": "Free text on name and description",
+            "schema": {
+              "type": "string",
+              "maxLength": 100
+            }
+          },
+          {
+            "name": "lat",
+            "in": "query",
+            "schema": {
+              "type": "number",
+              "minimum": -90,
+              "maximum": 90
+            },
+            "example": 45.767
+          },
+          {
+            "name": "lng",
+            "in": "query",
+            "schema": {
+              "type": "number",
+              "minimum": -180,
+              "maximum": 180
+            },
+            "example": 4.836
+          },
+          {
+            "name": "minRating",
+            "in": "query",
+            "schema": {
+              "type": "number",
+              "minimum": 1,
+              "maximum": 5
+            }
+          },
+          {
+            "name": "maxHourlyRate",
+            "in": "query",
+            "schema": {
+              "type": "number",
+              "minimum": 0
+            }
+          },
+          {
+            "name": "sort",
+            "in": "query",
+            "description": "distance needs lat and lng",
+            "schema": {
+              "type": "string",
+              "enum": ["relevance", "distance", "rating", "price"],
+              "default": "relevance"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/Page"
+          },
+          {
+            "$ref": "#/components/parameters/PageSize"
+          }
+        ]
+      }
+    },
+    "/api/artisans/{id}": {
+      "parameters": [
+        {
+          "$ref": "#/components/parameters/Id"
+        }
+      ],
+      "get": {
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "The artisan",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ArtisanPublicProfile"
+                },
+                "example": {
+                  "id": "0b8f2c1e-5a3d-4c7e-9f10-000000000004",
+                  "displayName": "Jean Dupont",
+                  "description": "Plombier depuis 15 ans",
+                  "city": "Lyon",
+                  "trades": [
+                    {
+                      "id": "0b8f2c1e-5a3d-4c7e-9f10-000000000002",
+                      "slug": "plumber",
+                      "name": "Plombier"
+                    }
+                  ],
+                  "rates": {
+                    "hourlyRate": 55,
+                    "travelFee": 20
+                  },
+                  "ratingAverage": 4.6,
+                  "reviewCount": 18,
+                  "distanceKm": 4.2,
+                  "serviceArea": {
+                    "address": "Lyon",
+                    "latitude": 45.767,
+                    "longitude": 4.836,
+                    "radiusKm": 30
+                  },
+                  "photos": []
+                }
+              }
+            }
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        },
+        "tags": ["Search"],
+        "operationId": "getArtisan",
+        "summary": "Get an artisan public profile",
+        "description": "Public profile of a validated artisan. Private fields (SIRET, phone, documents) are never exposed.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/Id"
+          }
+        ]
+      }
+    },
+    "/api/diagnostic/questions": {
+      "get": {
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "The questions",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DiagnosticQuestionList"
+                },
+                "example": {
+                  "data": [
+                    {
+                      "id": "q1",
+                      "label": "Quel est le problème ?",
+                      "type": "single_choice",
+                      "required": true,
+                      "options": [
+                        {
+                          "id": "leak",
+                          "label": "Une fuite"
+                        },
+                        {
+                          "id": "power",
+                          "label": "Panne électrique"
+                        }
+                      ]
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        },
+        "tags": ["Diagnostic"],
+        "operationId": "getDiagnosticQuestions",
+        "summary": "Get the diagnostic questions",
+        "description": "Public. The questions are the same for everyone, in display order."
+      }
+    },
+    "/api/diagnostic": {
+      "post": {
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "The matching trades",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DiagnosticResult"
+                },
+                "example": {
+                  "trades": [
+                    {
+                      "id": "0b8f2c1e-5a3d-4c7e-9f10-000000000002",
+                      "slug": "plumber",
+                      "name": "Plombier"
+                    }
+                  ],
+                  "urgency": "urgent",
+                  "summary": "Fuite sous évier, intervention rapide conseillée"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "422": {
+            "$ref": "#/components/responses/UnprocessableEntity"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        },
+        "tags": ["Diagnostic"],
+        "operationId": "submitDiagnostic",
+        "summary": "Submit diagnostic answers and get the matching trade",
+        "description": "Public. Stateless: nothing is stored, the result is computed from the answers.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DiagnosticAnswersBody"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/interventions": {
+      "post": {
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "The created intervention",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Intervention"
+                },
+                "example": {
+                  "id": "0b8f2c1e-5a3d-4c7e-9f10-000000000001",
+                  "tradeId": "0b8f2c1e-5a3d-4c7e-9f10-000000000002",
+                  "title": "Fuite sous évier",
+                  "description": "L'eau coule sous l'évier depuis ce matin",
+                  "urgency": "urgent",
+                  "address": {
+                    "street": "12 rue de la République",
+                    "postalCode": "69001",
+                    "city": "Lyon",
+                    "latitude": 45.767,
+                    "longitude": 4.836
+                  },
+                  "status": "draft",
+                  "createdAt": "2026-10-29T10:00:00Z",
+                  "updatedAt": "2026-10-29T10:00:00Z"
+                }
+              }
+            },
+            "headers": {
+              "Location": {
+                "description": "URL of the created resource",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        },
+        "tags": ["Interventions"],
+        "operationId": "createIntervention",
+        "summary": "Create an intervention request",
+        "description": "Creates the request as a `draft`. It becomes visible to artisans once submitted.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateInterventionBody"
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A page of interventions",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InterventionList"
+                },
+                "example": {
+                  "data": [
+                    {
+                      "id": "0b8f2c1e-5a3d-4c7e-9f10-000000000001",
+                      "tradeId": "0b8f2c1e-5a3d-4c7e-9f10-000000000002",
+                      "title": "Fuite sous évier",
+                      "description": "L'eau coule sous l'évier depuis ce matin",
+                      "urgency": "urgent",
+                      "address": {
+                        "street": "12 rue de la République",
+                        "postalCode": "69001",
+                        "city": "Lyon",
+                        "latitude": 45.767,
+                        "longitude": 4.836
+                      },
+                      "status": "draft",
+                      "createdAt": "2026-10-29T10:00:00Z",
+                      "updatedAt": "2026-10-29T10:00:00Z"
+                    }
+                  ],
+                  "meta": {
+                    "page": 1,
+                    "pageSize": 20,
+                    "total": 1
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        },
+        "tags": ["Interventions"],
+        "operationId": "listInterventions",
+        "summary": "List my intervention requests",
+        "description": "Clients get their own requests. Artisans get the requests submitted to them.",
+        "parameters": [
+          {
+            "name": "status",
+            "in": "query",
+            "schema": {
+              "$ref": "#/components/schemas/InterventionStatus"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/Page"
+          },
+          {
+            "$ref": "#/components/parameters/PageSize"
+          }
+        ]
+      }
+    },
+    "/api/interventions/{id}": {
+      "parameters": [
+        {
+          "$ref": "#/components/parameters/Id"
+        }
+      ],
+      "get": {
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The intervention",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Intervention"
+                },
+                "example": {
+                  "id": "0b8f2c1e-5a3d-4c7e-9f10-000000000001",
+                  "tradeId": "0b8f2c1e-5a3d-4c7e-9f10-000000000002",
+                  "title": "Fuite sous évier",
+                  "description": "L'eau coule sous l'évier depuis ce matin",
+                  "urgency": "urgent",
+                  "address": {
+                    "street": "12 rue de la République",
+                    "postalCode": "69001",
+                    "city": "Lyon",
+                    "latitude": 45.767,
+                    "longitude": 4.836
+                  },
+                  "status": "draft",
+                  "createdAt": "2026-10-29T10:00:00Z",
+                  "updatedAt": "2026-10-29T10:00:00Z"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        },
+        "tags": ["Interventions"],
+        "operationId": "getIntervention",
+        "summary": "Get an intervention request",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/InterventionId"
+          }
+        ]
+      },
+      "patch": {
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The updated intervention",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Intervention"
+                },
+                "example": {
+                  "id": "0b8f2c1e-5a3d-4c7e-9f10-000000000001",
+                  "tradeId": "0b8f2c1e-5a3d-4c7e-9f10-000000000002",
+                  "title": "Fuite sous évier",
+                  "description": "L'eau coule sous l'évier depuis ce matin",
+                  "urgency": "urgent",
+                  "address": {
+                    "street": "12 rue de la République",
+                    "postalCode": "69001",
+                    "city": "Lyon",
+                    "latitude": 45.767,
+                    "longitude": 4.836
+                  },
+                  "status": "draft",
+                  "createdAt": "2026-10-29T10:00:00Z",
+                  "updatedAt": "2026-10-29T10:00:00Z"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        },
+        "tags": ["Interventions"],
+        "operationId": "updateIntervention",
+        "summary": "Update an intervention request",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/InterventionId"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateInterventionBody"
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Deleted"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        },
+        "tags": ["Interventions"],
+        "operationId": "deleteIntervention",
+        "summary": "Delete an intervention request",
+        "description": "Only while the status is `draft`.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/InterventionId"
+          }
+        ]
+      }
+    },
+    "/api/interventions/{id}/submissions": {
+      "parameters": [
+        {
+          "$ref": "#/components/parameters/Id"
+        }
+      ],
+      "post": {
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "One submission per artisan",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SubmissionList"
+                },
+                "example": {
+                  "data": [
+                    {
+                      "id": "0b8f2c1e-5a3d-4c7e-9f10-000000000009",
+                      "interventionId": "0b8f2c1e-5a3d-4c7e-9f10-000000000001",
+                      "artisanId": "0b8f2c1e-5a3d-4c7e-9f10-000000000004",
+                      "status": "pending",
+                      "createdAt": "2026-10-29T11:00:00Z"
+                    }
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "Location": {
+                "description": "URL of the created resource",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        },
+        "tags": ["Interventions"],
+        "operationId": "submitIntervention",
+        "summary": "Send the request to artisans",
+        "description": "Sends a `draft` intervention to 1 to 5 artisans and moves it to `submitted`.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/InterventionId"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SubmitInterventionBody"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/interventions/{id}/status": {
+      "parameters": [
+        {
+          "$ref": "#/components/parameters/Id"
+        }
+      ],
+      "get": {
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Current status and history",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InterventionStatusResponse"
+                },
+                "example": {
+                  "status": "submitted",
+                  "history": [
+                    {
+                      "status": "draft",
+                      "at": "2026-10-29T10:00:00Z"
+                    },
+                    {
+                      "status": "submitted",
+                      "at": "2026-10-29T11:00:00Z"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        },
+        "tags": ["Interventions"],
+        "operationId": "getInterventionStatus",
+        "summary": "Follow the status of an intervention",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/InterventionId"
+          }
+        ]
+      },
+      "patch": {
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The new status",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InterventionStatusResponse"
+                },
+                "example": {
+                  "status": "in_progress",
+                  "history": [
+                    {
+                      "status": "scheduled",
+                      "at": "2026-11-01T09:00:00Z"
+                    },
+                    {
+                      "status": "in_progress",
+                      "at": "2026-11-03T09:00:00Z"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        },
+        "tags": ["Interventions"],
+        "operationId": "updateInterventionStatus",
+        "summary": "Update the status of an intervention",
+        "description": "Manual transitions only: `in_progress` and `completed` (artisan), `cancelled` (client or artisan). Other transitions happen as side effects (submit, accept quote, book, pay).",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/InterventionId"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateInterventionStatusBody"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/quotes": {
+      "post": {
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "The created quote",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Quote"
+                },
+                "example": {
+                  "id": "0b8f2c1e-5a3d-4c7e-9f10-000000000003",
+                  "interventionId": "0b8f2c1e-5a3d-4c7e-9f10-000000000001",
+                  "artisanId": "0b8f2c1e-5a3d-4c7e-9f10-000000000004",
+                  "lines": [
+                    {
+                      "label": "Remplacement du siphon",
+                      "quantity": 1,
+                      "unitPriceCents": 4500
+                    },
+                    {
+                      "label": "Main d'œuvre",
+                      "quantity": 1,
+                      "unitPriceCents": 5000
+                    }
+                  ],
+                  "totalCents": 9500,
+                  "currency": "EUR",
+                  "message": null,
+                  "validUntil": "2026-11-15",
+                  "status": "sent",
+                  "createdAt": "2026-10-29T12:00:00Z"
+                }
+              }
+            },
+            "headers": {
+              "Location": {
+                "description": "URL of the created resource",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        },
+        "tags": ["Quotes"],
+        "operationId": "createQuote",
+        "summary": "Create a quote (artisan)",
+        "description": "Artisan only, for an intervention submitted to them. `totalCents` is computed by the server.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateQuoteBody"
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A page of quotes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/QuoteList"
+                },
+                "example": {
+                  "data": [
+                    {
+                      "id": "0b8f2c1e-5a3d-4c7e-9f10-000000000003",
+                      "interventionId": "0b8f2c1e-5a3d-4c7e-9f10-000000000001",
+                      "artisanId": "0b8f2c1e-5a3d-4c7e-9f10-000000000004",
+                      "lines": [
+                        {
+                          "label": "Remplacement du siphon",
+                          "quantity": 1,
+                          "unitPriceCents": 4500
+                        },
+                        {
+                          "label": "Main d'œuvre",
+                          "quantity": 1,
+                          "unitPriceCents": 5000
+                        }
+                      ],
+                      "totalCents": 9500,
+                      "currency": "EUR",
+                      "message": null,
+                      "validUntil": "2026-11-15",
+                      "status": "sent",
+                      "createdAt": "2026-10-29T12:00:00Z"
+                    }
+                  ],
+                  "meta": {
+                    "page": 1,
+                    "pageSize": 20,
+                    "total": 1
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        },
+        "tags": ["Quotes"],
+        "operationId": "listQuotes",
+        "summary": "List my quotes",
+        "description": "Clients get the quotes received, artisans the quotes they wrote.",
+        "parameters": [
+          {
+            "name": "interventionId",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "schema": {
+              "$ref": "#/components/schemas/QuoteStatus"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/Page"
+          },
+          {
+            "$ref": "#/components/parameters/PageSize"
+          }
+        ]
+      }
+    },
+    "/api/quotes/{id}": {
+      "parameters": [
+        {
+          "$ref": "#/components/parameters/Id"
+        }
+      ],
+      "get": {
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The quote",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Quote"
+                },
+                "example": {
+                  "id": "0b8f2c1e-5a3d-4c7e-9f10-000000000003",
+                  "interventionId": "0b8f2c1e-5a3d-4c7e-9f10-000000000001",
+                  "artisanId": "0b8f2c1e-5a3d-4c7e-9f10-000000000004",
+                  "lines": [
+                    {
+                      "label": "Remplacement du siphon",
+                      "quantity": 1,
+                      "unitPriceCents": 4500
+                    },
+                    {
+                      "label": "Main d'œuvre",
+                      "quantity": 1,
+                      "unitPriceCents": 5000
+                    }
+                  ],
+                  "totalCents": 9500,
+                  "currency": "EUR",
+                  "message": null,
+                  "validUntil": "2026-11-15",
+                  "status": "sent",
+                  "createdAt": "2026-10-29T12:00:00Z"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        },
+        "tags": ["Quotes"],
+        "operationId": "getQuote",
+        "summary": "Get a quote",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/Id"
+          }
+        ]
+      },
+      "patch": {
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The updated quote",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Quote"
+                },
+                "example": {
+                  "id": "0b8f2c1e-5a3d-4c7e-9f10-000000000003",
+                  "interventionId": "0b8f2c1e-5a3d-4c7e-9f10-000000000001",
+                  "artisanId": "0b8f2c1e-5a3d-4c7e-9f10-000000000004",
+                  "lines": [
+                    {
+                      "label": "Remplacement du siphon",
+                      "quantity": 1,
+                      "unitPriceCents": 4500
+                    },
+                    {
+                      "label": "Main d'œuvre",
+                      "quantity": 1,
+                      "unitPriceCents": 5000
+                    }
+                  ],
+                  "totalCents": 9500,
+                  "currency": "EUR",
+                  "message": null,
+                  "validUntil": "2026-11-15",
+                  "status": "sent",
+                  "createdAt": "2026-10-29T12:00:00Z"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        },
+        "tags": ["Quotes"],
+        "operationId": "updateQuote",
+        "summary": "Update a quote (artisan)",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/Id"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateQuoteBody"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/quotes/{id}/accept": {
+      "parameters": [
+        {
+          "$ref": "#/components/parameters/Id"
+        }
+      ],
+      "post": {
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The accepted quote",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Quote"
+                },
+                "example": {
+                  "id": "0b8f2c1e-5a3d-4c7e-9f10-000000000003",
+                  "interventionId": "0b8f2c1e-5a3d-4c7e-9f10-000000000001",
+                  "artisanId": "0b8f2c1e-5a3d-4c7e-9f10-000000000004",
+                  "lines": [
+                    {
+                      "label": "Remplacement du siphon",
+                      "quantity": 1,
+                      "unitPriceCents": 4500
+                    },
+                    {
+                      "label": "Main d'œuvre",
+                      "quantity": 1,
+                      "unitPriceCents": 5000
+                    }
+                  ],
+                  "totalCents": 9500,
+                  "currency": "EUR",
+                  "message": null,
+                  "validUntil": "2026-11-15",
+                  "status": "accepted",
+                  "createdAt": "2026-10-29T12:00:00Z"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "422": {
+            "$ref": "#/components/responses/UnprocessableEntity"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        },
+        "tags": ["Quotes"],
+        "operationId": "acceptQuote",
+        "summary": "Accept a quote",
+        "description": "Client only. The intervention moves to `accepted`, other quotes of the intervention are declined. 422 when the quote has expired.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/Id"
+          }
+        ]
+      }
+    },
+    "/api/quotes/{id}/decline": {
+      "parameters": [
+        {
+          "$ref": "#/components/parameters/Id"
+        }
+      ],
+      "post": {
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The declined quote",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Quote"
+                },
+                "example": {
+                  "id": "0b8f2c1e-5a3d-4c7e-9f10-000000000003",
+                  "interventionId": "0b8f2c1e-5a3d-4c7e-9f10-000000000001",
+                  "artisanId": "0b8f2c1e-5a3d-4c7e-9f10-000000000004",
+                  "lines": [
+                    {
+                      "label": "Remplacement du siphon",
+                      "quantity": 1,
+                      "unitPriceCents": 4500
+                    },
+                    {
+                      "label": "Main d'œuvre",
+                      "quantity": 1,
+                      "unitPriceCents": 5000
+                    }
+                  ],
+                  "totalCents": 9500,
+                  "currency": "EUR",
+                  "message": null,
+                  "validUntil": "2026-11-15",
+                  "status": "declined",
+                  "createdAt": "2026-10-29T12:00:00Z"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        },
+        "tags": ["Quotes"],
+        "operationId": "declineQuote",
+        "summary": "Decline a quote",
+        "description": "Client only.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/Id"
+          }
+        ]
+      }
+    },
+    "/api/artisans/me/availability": {
+      "get": {
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "My availability",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Availability"
+                },
+                "example": {
+                  "slots": [
+                    {
+                      "dayOfWeek": 1,
+                      "start": "09:00",
+                      "end": "17:00"
+                    }
+                  ],
+                  "unavailableDates": ["2026-11-11"]
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        },
+        "tags": ["Planning"],
+        "operationId": "getAvailability",
+        "summary": "Get my availability",
+        "description": "Artisan only. Empty when never set."
+      },
+      "put": {
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The saved availability",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Availability"
+                },
+                "example": {
+                  "slots": [
+                    {
+                      "dayOfWeek": 1,
+                      "start": "09:00",
+                      "end": "17:00"
+                    }
+                  ],
+                  "unavailableDates": []
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        },
+        "tags": ["Planning"],
+        "operationId": "setAvailability",
+        "summary": "Replace my availability",
+        "description": "Artisan only. Replaces the whole availability. Slots of the same day must not overlap and `start` must be before `end`.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Availability"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/appointments": {
+      "post": {
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "The created appointment",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Appointment"
+                },
+                "example": {
+                  "id": "0b8f2c1e-5a3d-4c7e-9f10-000000000005",
+                  "interventionId": "0b8f2c1e-5a3d-4c7e-9f10-000000000001",
+                  "quoteId": "0b8f2c1e-5a3d-4c7e-9f10-000000000003",
+                  "clientId": "usr_123",
+                  "artisanId": "0b8f2c1e-5a3d-4c7e-9f10-000000000004",
+                  "startsAt": "2026-11-03T09:00:00Z",
+                  "endsAt": "2026-11-03T11:00:00Z",
+                  "status": "proposed",
+                  "note": null
+                }
+              }
+            },
+            "headers": {
+              "Location": {
+                "description": "URL of the created resource",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        },
+        "tags": ["Planning"],
+        "operationId": "createAppointment",
+        "summary": "Book an appointment",
+        "description": "Client only, for an accepted quote. The slot must fit the artisan availability, else 409. The appointment starts as `proposed` until the artisan confirms.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateAppointmentBody"
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A page of appointments",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppointmentList"
+                },
+                "example": {
+                  "data": [
+                    {
+                      "id": "0b8f2c1e-5a3d-4c7e-9f10-000000000005",
+                      "interventionId": "0b8f2c1e-5a3d-4c7e-9f10-000000000001",
+                      "quoteId": "0b8f2c1e-5a3d-4c7e-9f10-000000000003",
+                      "clientId": "usr_123",
+                      "artisanId": "0b8f2c1e-5a3d-4c7e-9f10-000000000004",
+                      "startsAt": "2026-11-03T09:00:00Z",
+                      "endsAt": "2026-11-03T11:00:00Z",
+                      "status": "proposed",
+                      "note": null
+                    }
+                  ],
+                  "meta": {
+                    "page": 1,
+                    "pageSize": 20,
+                    "total": 1
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        },
+        "tags": ["Planning"],
+        "operationId": "listAppointments",
+        "summary": "List my appointments",
+        "parameters": [
+          {
+            "name": "status",
+            "in": "query",
+            "schema": {
+              "$ref": "#/components/schemas/AppointmentStatus"
+            }
+          },
+          {
+            "name": "from",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/Page"
+          },
+          {
+            "$ref": "#/components/parameters/PageSize"
+          }
+        ]
+      }
+    },
+    "/api/appointments/{id}": {
+      "parameters": [
+        {
+          "$ref": "#/components/parameters/Id"
+        }
+      ],
+      "get": {
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The appointment",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Appointment"
+                },
+                "example": {
+                  "id": "0b8f2c1e-5a3d-4c7e-9f10-000000000005",
+                  "interventionId": "0b8f2c1e-5a3d-4c7e-9f10-000000000001",
+                  "quoteId": "0b8f2c1e-5a3d-4c7e-9f10-000000000003",
+                  "clientId": "usr_123",
+                  "artisanId": "0b8f2c1e-5a3d-4c7e-9f10-000000000004",
+                  "startsAt": "2026-11-03T09:00:00Z",
+                  "endsAt": "2026-11-03T11:00:00Z",
+                  "status": "proposed",
+                  "note": null
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        },
+        "tags": ["Planning"],
+        "operationId": "getAppointment",
+        "summary": "Get an appointment",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/Id"
+          }
+        ]
+      },
+      "patch": {
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The updated appointment",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Appointment"
+                },
+                "example": {
+                  "id": "0b8f2c1e-5a3d-4c7e-9f10-000000000005",
+                  "interventionId": "0b8f2c1e-5a3d-4c7e-9f10-000000000001",
+                  "quoteId": "0b8f2c1e-5a3d-4c7e-9f10-000000000003",
+                  "clientId": "usr_123",
+                  "artisanId": "0b8f2c1e-5a3d-4c7e-9f10-000000000004",
+                  "startsAt": "2026-11-03T09:00:00Z",
+                  "endsAt": "2026-11-03T11:00:00Z",
+                  "status": "confirmed",
+                  "note": null
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        },
+        "tags": ["Planning"],
+        "operationId": "updateAppointment",
+        "summary": "Reschedule or cancel an appointment",
+        "description": "Reschedule (`startsAt`, `endsAt`) or change the status. Rescheduling puts the appointment back to `proposed`.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/Id"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateAppointmentBody"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/payments": {
+      "post": {
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "The pending payment",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Payment"
+                },
+                "example": {
+                  "id": "0b8f2c1e-5a3d-4c7e-9f10-000000000006",
+                  "quoteId": "0b8f2c1e-5a3d-4c7e-9f10-000000000003",
+                  "interventionId": "0b8f2c1e-5a3d-4c7e-9f10-000000000001",
+                  "amountCents": 9500,
+                  "currency": "EUR",
+                  "status": "pending",
+                  "checkoutUrl": "https://pay.example.com/checkout/abc",
+                  "createdAt": "2026-11-03T12:00:00Z"
+                }
+              }
+            },
+            "headers": {
+              "Location": {
+                "description": "URL of the created resource",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        },
+        "tags": ["Payments"],
+        "operationId": "createPayment",
+        "summary": "Start a payment",
+        "description": "Client only, once the intervention is `completed`. Returns a pending payment with a `checkoutUrl` to redirect the client to. The final status comes from the provider.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreatePaymentBody"
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A page of payments",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PaymentList"
+                },
+                "example": {
+                  "data": [
+                    {
+                      "id": "0b8f2c1e-5a3d-4c7e-9f10-000000000006",
+                      "quoteId": "0b8f2c1e-5a3d-4c7e-9f10-000000000003",
+                      "interventionId": "0b8f2c1e-5a3d-4c7e-9f10-000000000001",
+                      "amountCents": 9500,
+                      "currency": "EUR",
+                      "status": "pending",
+                      "checkoutUrl": "https://pay.example.com/checkout/abc",
+                      "createdAt": "2026-11-03T12:00:00Z"
+                    }
+                  ],
+                  "meta": {
+                    "page": 1,
+                    "pageSize": 20,
+                    "total": 1
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        },
+        "tags": ["Payments"],
+        "operationId": "listPayments",
+        "summary": "List my payments",
+        "parameters": [
+          {
+            "name": "status",
+            "in": "query",
+            "schema": {
+              "$ref": "#/components/schemas/PaymentStatus"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/Page"
+          },
+          {
+            "$ref": "#/components/parameters/PageSize"
+          }
+        ]
+      }
+    },
+    "/api/payments/{id}": {
+      "parameters": [
+        {
+          "$ref": "#/components/parameters/Id"
+        }
+      ],
+      "get": {
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The payment",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Payment"
+                },
+                "example": {
+                  "id": "0b8f2c1e-5a3d-4c7e-9f10-000000000006",
+                  "quoteId": "0b8f2c1e-5a3d-4c7e-9f10-000000000003",
+                  "interventionId": "0b8f2c1e-5a3d-4c7e-9f10-000000000001",
+                  "amountCents": 9500,
+                  "currency": "EUR",
+                  "status": "pending",
+                  "checkoutUrl": "https://pay.example.com/checkout/abc",
+                  "createdAt": "2026-11-03T12:00:00Z"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        },
+        "tags": ["Payments"],
+        "operationId": "getPayment",
+        "summary": "Get a payment",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/Id"
+          }
+        ]
+      }
+    },
+    "/api/reviews": {
+      "post": {
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "The created review",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Review"
+                },
+                "example": {
+                  "id": "0b8f2c1e-5a3d-4c7e-9f10-000000000007",
+                  "interventionId": "0b8f2c1e-5a3d-4c7e-9f10-000000000001",
+                  "artisanId": "0b8f2c1e-5a3d-4c7e-9f10-000000000004",
+                  "authorName": "Marie L.",
+                  "rating": 5,
+                  "comment": "Rapide et soigné",
+                  "createdAt": "2026-11-04T08:00:00Z"
+                }
+              }
+            },
+            "headers": {
+              "Location": {
+                "description": "URL of the created resource",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        },
+        "tags": ["Reviews"],
+        "operationId": "createReview",
+        "summary": "Leave a review",
+        "description": "Client only, once the intervention is `paid`. One review per intervention, else 409.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateReviewBody"
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "A page of reviews",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReviewList"
+                },
+                "example": {
+                  "data": [
+                    {
+                      "id": "0b8f2c1e-5a3d-4c7e-9f10-000000000007",
+                      "interventionId": "0b8f2c1e-5a3d-4c7e-9f10-000000000001",
+                      "artisanId": "0b8f2c1e-5a3d-4c7e-9f10-000000000004",
+                      "authorName": "Marie L.",
+                      "rating": 5,
+                      "comment": "Rapide et soigné",
+                      "createdAt": "2026-11-04T08:00:00Z"
+                    }
+                  ],
+                  "meta": {
+                    "page": 1,
+                    "pageSize": 20,
+                    "total": 1
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        },
+        "tags": ["Reviews"],
+        "operationId": "listReviews",
+        "summary": "List reviews (filter by artisan)",
+        "description": "Public.",
+        "parameters": [
+          {
+            "name": "artisanId",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "minRating",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 5
+            }
+          },
+          {
+            "$ref": "#/components/parameters/Page"
+          },
+          {
+            "$ref": "#/components/parameters/PageSize"
+          }
+        ]
+      }
+    },
+    "/api/reviews/{id}": {
+      "parameters": [
+        {
+          "$ref": "#/components/parameters/Id"
+        }
+      ],
+      "get": {
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "The review",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Review"
+                },
+                "example": {
+                  "id": "0b8f2c1e-5a3d-4c7e-9f10-000000000007",
+                  "interventionId": "0b8f2c1e-5a3d-4c7e-9f10-000000000001",
+                  "artisanId": "0b8f2c1e-5a3d-4c7e-9f10-000000000004",
+                  "authorName": "Marie L.",
+                  "rating": 5,
+                  "comment": "Rapide et soigné",
+                  "createdAt": "2026-11-04T08:00:00Z"
+                }
+              }
+            }
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        },
+        "tags": ["Reviews"],
+        "operationId": "getReview",
+        "summary": "Get a review",
+        "description": "Public.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/Id"
+          }
+        ]
+      }
+    },
+    "/api/notifications": {
+      "get": {
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A page of notifications, newest first",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NotificationList"
+                },
+                "example": {
+                  "data": [
+                    {
+                      "id": "0b8f2c1e-5a3d-4c7e-9f10-000000000008",
+                      "type": "quote_received",
+                      "title": "Nouveau devis",
+                      "body": "Jean Dupont vous a envoyé un devis de 95 €",
+                      "resourceId": "0b8f2c1e-5a3d-4c7e-9f10-000000000003",
+                      "readAt": null,
+                      "createdAt": "2026-10-29T12:00:00Z"
+                    }
+                  ],
+                  "meta": {
+                    "page": 1,
+                    "pageSize": 20,
+                    "total": 1
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        },
+        "tags": ["Notifications"],
+        "operationId": "listNotifications",
+        "summary": "List my notifications",
+        "parameters": [
+          {
+            "name": "unread",
+            "in": "query",
+            "description": "Only unread notifications",
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/Page"
+          },
+          {
+            "$ref": "#/components/parameters/PageSize"
+          }
+        ]
+      }
+    },
+    "/api/notifications/preferences": {
+      "get": {
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "My preferences",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NotificationPreferences"
+                },
+                "example": {
+                  "email": true,
+                  "push": false
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        },
+        "tags": ["Notifications"],
+        "operationId": "getNotificationPreferences",
+        "summary": "Get my notification preferences"
+      },
+      "put": {
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The saved preferences",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NotificationPreferences"
+                },
+                "example": {
+                  "email": true,
+                  "push": true
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        },
+        "tags": ["Notifications"],
+        "operationId": "setNotificationPreferences",
+        "summary": "Replace my notification preferences",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/NotificationPreferences"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/notifications/{id}": {
+      "parameters": [
+        {
+          "$ref": "#/components/parameters/Id"
+        }
+      ],
+      "patch": {
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The updated notification",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Notification"
+                },
+                "example": {
+                  "id": "0b8f2c1e-5a3d-4c7e-9f10-000000000008",
+                  "type": "quote_received",
+                  "title": "Nouveau devis",
+                  "body": "Jean Dupont vous a envoyé un devis de 95 €",
+                  "resourceId": "0b8f2c1e-5a3d-4c7e-9f10-000000000003",
+                  "readAt": "2026-10-29T13:00:00Z",
+                  "createdAt": "2026-10-29T12:00:00Z"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        },
+        "tags": ["Notifications"],
+        "operationId": "markNotificationRead",
+        "summary": "Mark a notification as read",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/Id"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MarkNotificationReadBody"
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "parameters": {
+      "Id": {
+        "name": "id",
+        "in": "path",
+        "required": true,
+        "schema": {
+          "type": "string",
+          "format": "uuid"
+        }
+      },
+      "Page": {
+        "name": "page",
+        "in": "query",
+        "schema": {
+          "type": "integer",
+          "minimum": 1,
+          "default": 1
+        }
+      },
+      "PageSize": {
+        "name": "pageSize",
+        "in": "query",
+        "schema": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 100,
+          "default": 20
+        }
+      },
+      "InterventionId": {
+        "name": "id",
+        "in": "path",
+        "required": true,
+        "description": "Intervention id",
+        "schema": {
+          "type": "string",
+          "format": "uuid"
+        }
+      }
+    },
+    "securitySchemes": {
+      "cookieAuth": {
+        "type": "apiKey",
+        "in": "cookie",
+        "name": "better-auth.session_token"
+      }
+    },
+    "requestBodies": {
+      "UpdateMe": {
+        "required": true,
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/UpdateMeBody"
+            }
+          }
+        }
+      },
+      "ChooseRole": {
+        "required": true,
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ChooseRoleBody"
+            }
+          }
+        }
+      },
+      "UpdateArtisanProfile": {
+        "required": true,
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/UpdateArtisanProfileBody"
+            }
+          }
+        }
+      },
+      "Upload": {
+        "required": true,
+        "content": {
+          "multipart/form-data": {
+            "schema": {
+              "type": "object",
+              "required": ["file"],
+              "properties": {
+                "file": {
+                  "type": "string",
+                  "format": "binary",
+                  "description": "PDF, JPEG or PNG"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "responses": {
+      "BadRequest": {
+        "description": "Validation error",
+        "content": {
+          "application/problem+json": {
+            "schema": {
+              "$ref": "#/components/schemas/Problem"
+            },
+            "example": {
+              "type": "about:blank",
+              "title": "Validation error",
+              "status": 400,
+              "detail": "The request body is invalid",
+              "errors": [
+                {
+                  "field": "siret",
+                  "message": "Must be 14 digits"
+                }
+              ]
+            }
+          }
+        }
+      },
+      "Unauthorized": {
+        "description": "Not signed in",
+        "content": {
+          "application/problem+json": {
+            "schema": {
+              "$ref": "#/components/schemas/Problem"
+            },
+            "example": {
+              "type": "about:blank",
+              "title": "Unauthorized",
+              "status": 401,
+              "detail": "You must be signed in"
+            }
+          }
+        }
+      },
+      "Forbidden": {
+        "description": "Forbidden: wrong role, or resource owned by someone else",
+        "content": {
+          "application/problem+json": {
+            "schema": {
+              "$ref": "#/components/schemas/Problem"
+            },
+            "example": {
+              "type": "about:blank",
+              "title": "Forbidden",
+              "status": 403,
+              "detail": "This action is reserved to artisans"
+            }
+          }
+        }
+      },
+      "NotFound": {
+        "description": "Not found",
+        "content": {
+          "application/problem+json": {
+            "schema": {
+              "$ref": "#/components/schemas/Problem"
+            },
+            "example": {
+              "type": "about:blank",
+              "title": "Not found",
+              "status": 404,
+              "detail": "No resource with this id"
+            }
+          }
+        }
+      },
+      "Conflict": {
+        "description": "Conflict with the current state of the resource",
+        "content": {
+          "application/problem+json": {
+            "schema": {
+              "$ref": "#/components/schemas/Problem"
+            },
+            "example": {
+              "type": "about:blank",
+              "title": "Conflict",
+              "status": 409,
+              "detail": "The resource is not in a state that allows this action"
+            }
+          }
+        }
+      },
+      "PayloadTooLarge": {
+        "description": "Payload too large",
+        "content": {
+          "application/problem+json": {
+            "schema": {
+              "$ref": "#/components/schemas/Problem"
+            },
+            "example": {
+              "type": "about:blank",
+              "title": "Payload too large",
+              "status": 413,
+              "detail": "The file exceeds 5 MB"
+            }
+          }
+        }
+      },
+      "UnsupportedMediaType": {
+        "description": "Unsupported media type",
+        "content": {
+          "application/problem+json": {
+            "schema": {
+              "$ref": "#/components/schemas/Problem"
+            },
+            "example": {
+              "type": "about:blank",
+              "title": "Unsupported media type",
+              "status": 415,
+              "detail": "Only JPEG and PNG are accepted"
+            }
+          }
+        }
+      },
+      "InternalError": {
+        "description": "Unexpected server error",
+        "content": {
+          "application/problem+json": {
+            "schema": {
+              "$ref": "#/components/schemas/Problem"
+            },
+            "example": {
+              "type": "about:blank",
+              "title": "Internal server error",
+              "status": 500,
+              "detail": "Something went wrong, try again later"
+            }
+          }
+        }
+      },
+      "UnprocessableEntity": {
+        "description": "The request is well formed but breaks a business rule",
+        "content": {
+          "application/problem+json": {
+            "schema": {
+              "$ref": "#/components/schemas/Problem"
+            },
+            "example": {
+              "type": "about:blank",
+              "title": "Unprocessable entity",
+              "status": 422,
+              "detail": "The quote has expired"
+            }
+          }
+        }
+      }
+    },
+    "schemas": {
+      "Problem": {
+        "type": "object",
+        "required": ["type", "title", "status"],
+        "properties": {
+          "type": {
+            "type": "string",
+            "example": "about:blank"
+          },
+          "title": {
+            "type": "string",
+            "example": "Validation error"
+          },
+          "status": {
+            "type": "integer",
+            "example": 400
+          },
+          "detail": {
+            "type": "string",
+            "example": "The request body is invalid"
+          },
+          "errors": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": ["field", "message"],
+              "properties": {
+                "field": {
+                  "type": "string",
+                  "example": "siret"
+                },
+                "message": {
+                  "type": "string",
+                  "example": "Must be 14 digits"
+                }
+              }
+            }
+          }
+        }
+      },
+      "PageMeta": {
+        "type": "object",
+        "required": ["page", "pageSize", "total"],
+        "properties": {
+          "page": {
+            "type": "integer",
+            "example": 1
+          },
+          "pageSize": {
+            "type": "integer",
+            "example": 20
+          },
+          "total": {
+            "type": "integer",
+            "example": 42
+          }
+        }
+      },
+      "Role": {
+        "type": "string",
+        "enum": ["client", "artisan", "admin"]
+      },
+      "ValidationStatus": {
+        "type": "string",
+        "enum": ["pending", "approved", "rejected"]
+      },
+      "DocumentType": {
+        "type": "string",
+        "enum": ["identity", "insurance"]
+      },
+      "Me": {
+        "type": "object",
+        "required": [
+          "id",
+          "email",
+          "firstName",
+          "lastName",
+          "role",
+          "validationStatus",
+          "createdAt"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "email": {
+            "type": "string",
+            "format": "email",
+            "example": "marie.dupont@example.com"
+          },
+          "firstName": {
+            "type": "string",
+            "example": "Marie"
+          },
+          "lastName": {
+            "type": "string",
+            "example": "Dupont"
+          },
+          "role": {
+            "description": "Null until the user has chosen client or artisan (ADP-71)",
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/Role"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "validationStatus": {
+            "description": "Only set when the role is artisan",
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/ValidationStatus"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "UpdateMeBody": {
+        "type": "object",
+        "properties": {
+          "firstName": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100
+          },
+          "lastName": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100
+          }
+        }
+      },
+      "ChooseRoleBody": {
+        "type": "object",
+        "required": ["role"],
+        "properties": {
+          "role": {
+            "type": "string",
+            "enum": ["client", "artisan"]
+          }
+        }
+      },
+      "Trade": {
+        "type": "object",
+        "required": ["id", "slug", "name"],
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "slug": {
+            "type": "string",
+            "example": "plumber"
+          },
+          "name": {
+            "type": "string",
+            "example": "Plombier"
+          }
+        }
+      },
+      "TradesList": {
+        "type": "object",
+        "required": ["data"],
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Trade"
+            }
+          }
+        }
+      },
+      "SetTradesBody": {
+        "type": "object",
+        "required": ["tradeIds"],
+        "properties": {
+          "tradeIds": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        }
+      },
+      "Rates": {
+        "description": "Indicative prices in euros, shown to clients before a quote",
+        "type": "object",
+        "required": ["hourlyRate", "travelFee"],
+        "properties": {
+          "hourlyRate": {
+            "type": ["number", "null"],
+            "minimum": 0,
+            "example": 55
+          },
+          "travelFee": {
+            "type": ["number", "null"],
+            "minimum": 0,
+            "example": 20
+          }
+        }
+      },
+      "ServiceArea": {
+        "type": "object",
+        "required": ["address", "latitude", "longitude", "radiusKm"],
+        "properties": {
+          "address": {
+            "type": "string",
+            "example": "12 rue de la République, 69001 Lyon"
+          },
+          "latitude": {
+            "type": "number",
+            "minimum": -90,
+            "maximum": 90,
+            "example": 45.767
+          },
+          "longitude": {
+            "type": "number",
+            "minimum": -180,
+            "maximum": 180,
+            "example": 4.836
+          },
+          "radiusKm": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 500,
+            "example": 30
+          }
+        }
+      },
+      "ArtisanDocument": {
+        "type": "object",
+        "required": ["id", "type", "fileName", "mimeType", "sizeBytes", "uploadedAt"],
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "type": {
+            "$ref": "#/components/schemas/DocumentType"
+          },
+          "fileName": {
+            "type": "string",
+            "example": "assurance-2026.pdf"
+          },
+          "mimeType": {
+            "type": "string",
+            "enum": ["application/pdf", "image/jpeg", "image/png"]
+          },
+          "sizeBytes": {
+            "type": "integer"
+          },
+          "uploadedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "DocumentsList": {
+        "type": "object",
+        "required": ["data"],
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ArtisanDocument"
+            }
+          }
+        }
+      },
+      "ArtisanPhoto": {
+        "type": "object",
+        "required": ["id", "url", "createdAt"],
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "url": {
+            "type": "string",
+            "format": "uri",
+            "description": "Shape depends on the storage choice (signed URL vs direct stream): open point"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "PhotosList": {
+        "type": "object",
+        "required": ["data"],
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ArtisanPhoto"
+            }
+          }
+        }
+      },
+      "ArtisanProfile": {
+        "type": "object",
+        "required": [
+          "id",
+          "userId",
+          "validationStatus",
+          "rejectionReason",
+          "decidedAt",
+          "siret",
+          "address",
+          "phone",
+          "description",
+          "trades",
+          "rates",
+          "serviceArea"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "userId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "validationStatus": {
+            "$ref": "#/components/schemas/ValidationStatus"
+          },
+          "rejectionReason": {
+            "type": ["string", "null"]
+          },
+          "decidedAt": {
+            "type": ["string", "null"],
+            "format": "date-time"
+          },
+          "siret": {
+            "type": ["string", "null"],
+            "pattern": "^\\d{14}$",
+            "example": "12345678901234"
+          },
+          "address": {
+            "type": ["string", "null"]
+          },
+          "phone": {
+            "type": ["string", "null"],
+            "example": "+33612345678"
+          },
+          "description": {
+            "type": ["string", "null"]
+          },
+          "trades": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Trade"
+            }
+          },
+          "rates": {
+            "$ref": "#/components/schemas/Rates"
+          },
+          "serviceArea": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/ServiceArea"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        }
+      },
+      "UpdateArtisanProfileBody": {
+        "type": "object",
+        "properties": {
+          "siret": {
+            "type": "string",
+            "pattern": "^\\d{14}$",
+            "description": "Must be 14 digits"
+          },
+          "address": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 300
+          },
+          "phone": {
+            "type": "string",
+            "minLength": 6,
+            "maxLength": 20
+          },
+          "description": {
+            "type": "string",
+            "maxLength": 2000
+          }
+        }
+      },
+      "AdminArtisanSummary": {
+        "type": "object",
+        "required": ["id", "firstName", "lastName", "email", "validationStatus", "submittedAt"],
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "firstName": {
+            "type": "string"
+          },
+          "lastName": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string",
+            "format": "email"
+          },
+          "validationStatus": {
+            "$ref": "#/components/schemas/ValidationStatus"
+          },
+          "submittedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "AdminArtisanDetail": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/ArtisanProfile"
+          },
+          {
+            "type": "object",
+            "required": ["firstName", "lastName", "email", "documents"],
+            "properties": {
+              "firstName": {
+                "type": "string"
+              },
+              "lastName": {
+                "type": "string"
+              },
+              "email": {
+                "type": "string",
+                "format": "email"
+              },
+              "documents": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/ArtisanDocument"
+                }
+              }
+            }
+          }
+        ]
+      },
+      "RejectBody": {
+        "type": "object",
+        "required": ["reason"],
+        "properties": {
+          "reason": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 1000,
+            "example": "Insurance certificate expired"
+          }
+        }
+      },
+      "Address": {
+        "type": "object",
+        "required": ["street", "postalCode", "city"],
+        "properties": {
+          "street": {
+            "type": "string",
+            "example": "12 rue de la République"
+          },
+          "postalCode": {
+            "type": "string",
+            "pattern": "^\\d{5}$",
+            "example": "69001"
+          },
+          "city": {
+            "type": "string",
+            "example": "Lyon"
+          },
+          "latitude": {
+            "type": ["number", "null"],
+            "minimum": -90,
+            "maximum": 90,
+            "example": 45.767
+          },
+          "longitude": {
+            "type": ["number", "null"],
+            "minimum": -180,
+            "maximum": 180,
+            "example": 4.836
+          }
+        }
+      },
+      "ArtisanSummary": {
+        "type": "object",
+        "required": [
+          "id",
+          "displayName",
+          "trades",
+          "rates",
+          "ratingAverage",
+          "reviewCount",
+          "distanceKm"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "displayName": {
+            "type": "string",
+            "example": "Jean Dupont"
+          },
+          "description": {
+            "type": ["string", "null"]
+          },
+          "city": {
+            "type": ["string", "null"],
+            "example": "Lyon"
+          },
+          "trades": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Trade"
+            }
+          },
+          "rates": {
+            "$ref": "#/components/schemas/Rates"
+          },
+          "ratingAverage": {
+            "type": ["number", "null"],
+            "minimum": 1,
+            "maximum": 5,
+            "example": 4.6
+          },
+          "reviewCount": {
+            "type": "integer",
+            "minimum": 0,
+            "example": 18
+          },
+          "distanceKm": {
+            "type": ["number", "null"],
+            "description": "Only set when lat and lng are given",
+            "example": 4.2
+          }
+        }
+      },
+      "ArtisanSummaryList": {
+        "type": "object",
+        "required": ["data", "meta"],
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ArtisanSummary"
+            }
+          },
+          "meta": {
+            "$ref": "#/components/schemas/PageMeta"
+          }
+        }
+      },
+      "ArtisanPublicProfile": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/ArtisanSummary"
+          },
+          {
+            "type": "object",
+            "required": ["serviceArea", "photos"],
+            "properties": {
+              "serviceArea": {
+                "oneOf": [
+                  {
+                    "$ref": "#/components/schemas/ServiceArea"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "photos": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/ArtisanPhoto"
+                }
+              }
+            }
+          }
+        ]
+      },
+      "DiagnosticOption": {
+        "type": "object",
+        "required": ["id", "label"],
+        "properties": {
+          "id": {
+            "type": "string",
+            "example": "leak"
+          },
+          "label": {
+            "type": "string",
+            "example": "Une fuite"
+          }
+        }
+      },
+      "DiagnosticQuestion": {
+        "type": "object",
+        "required": ["id", "label", "type", "required", "options"],
+        "properties": {
+          "id": {
+            "type": "string",
+            "example": "q1"
+          },
+          "label": {
+            "type": "string",
+            "example": "Quel est le problème ?"
+          },
+          "type": {
+            "type": "string",
+            "enum": ["single_choice", "multiple_choice", "text"]
+          },
+          "required": {
+            "type": "boolean"
+          },
+          "options": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DiagnosticOption"
+            },
+            "description": "Empty for text questions"
+          }
+        }
+      },
+      "DiagnosticQuestionList": {
+        "type": "object",
+        "required": ["data"],
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DiagnosticQuestion"
+            }
+          }
+        }
+      },
+      "DiagnosticAnswersBody": {
+        "type": "object",
+        "required": ["answers"],
+        "properties": {
+          "answers": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "type": "object",
+              "required": ["questionId", "value"],
+              "properties": {
+                "questionId": {
+                  "type": "string",
+                  "example": "q1"
+                },
+                "value": {
+                  "oneOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    }
+                  ],
+                  "description": "Option id(s) or free text"
+                }
+              }
+            }
+          }
+        }
+      },
+      "Urgency": {
+        "type": "string",
+        "enum": ["low", "normal", "urgent"]
+      },
+      "DiagnosticResult": {
+        "type": "object",
+        "required": ["trades", "urgency", "summary"],
+        "properties": {
+          "trades": {
+            "type": "array",
+            "description": "Matching trades, best match first",
+            "items": {
+              "$ref": "#/components/schemas/Trade"
+            }
+          },
+          "urgency": {
+            "$ref": "#/components/schemas/Urgency"
+          },
+          "summary": {
+            "type": "string",
+            "example": "Fuite sous évier, intervention rapide conseillée"
+          }
+        }
+      },
+      "InterventionStatus": {
+        "type": "string",
+        "enum": [
+          "draft",
+          "submitted",
+          "quoted",
+          "accepted",
+          "scheduled",
+          "in_progress",
+          "completed",
+          "paid",
+          "cancelled"
+        ],
+        "description": "Lifecycle: draft, submitted, quoted, accepted, scheduled, in_progress, completed, paid. Cancelled is reachable until in_progress"
+      },
+      "Intervention": {
+        "type": "object",
+        "required": [
+          "id",
+          "tradeId",
+          "title",
+          "description",
+          "urgency",
+          "address",
+          "status",
+          "createdAt",
+          "updatedAt"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "tradeId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "title": {
+            "type": "string",
+            "maxLength": 120,
+            "example": "Fuite sous évier"
+          },
+          "description": {
+            "type": "string",
+            "maxLength": 2000,
+            "example": "L'eau coule sous l'évier depuis ce matin"
+          },
+          "urgency": {
+            "$ref": "#/components/schemas/Urgency"
+          },
+          "address": {
+            "$ref": "#/components/schemas/Address"
+          },
+          "status": {
+            "$ref": "#/components/schemas/InterventionStatus"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "InterventionList": {
+        "type": "object",
+        "required": ["data", "meta"],
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Intervention"
+            }
+          },
+          "meta": {
+            "$ref": "#/components/schemas/PageMeta"
+          }
+        }
+      },
+      "CreateInterventionBody": {
+        "type": "object",
+        "required": ["tradeId", "title", "description", "address"],
+        "properties": {
+          "tradeId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "title": {
+            "type": "string",
+            "minLength": 3,
+            "maxLength": 120
+          },
+          "description": {
+            "type": "string",
+            "minLength": 10,
+            "maxLength": 2000
+          },
+          "urgency": {
+            "$ref": "#/components/schemas/Urgency",
+            "default": "normal"
+          },
+          "address": {
+            "$ref": "#/components/schemas/Address"
+          }
+        }
+      },
+      "UpdateInterventionBody": {
+        "type": "object",
+        "required": [],
+        "properties": {
+          "title": {
+            "type": "string",
+            "minLength": 3,
+            "maxLength": 120
+          },
+          "description": {
+            "type": "string",
+            "minLength": 10,
+            "maxLength": 2000
+          },
+          "urgency": {
+            "$ref": "#/components/schemas/Urgency"
+          },
+          "address": {
+            "$ref": "#/components/schemas/Address"
+          }
+        },
+        "minProperties": 1,
+        "description": "Partial update, only while the status is draft"
+      },
+      "SubmitInterventionBody": {
+        "type": "object",
+        "required": ["artisanIds"],
+        "properties": {
+          "artisanIds": {
+            "type": "array",
+            "minItems": 1,
+            "maxItems": 5,
+            "uniqueItems": true,
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        }
+      },
+      "Submission": {
+        "type": "object",
+        "required": ["id", "interventionId", "artisanId", "status", "createdAt"],
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "interventionId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "artisanId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "status": {
+            "type": "string",
+            "enum": ["pending", "quoted", "declined"]
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "SubmissionList": {
+        "type": "object",
+        "required": ["data"],
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Submission"
+            }
+          }
+        }
+      },
+      "InterventionStatusResponse": {
+        "type": "object",
+        "required": ["status", "history"],
+        "properties": {
+          "status": {
+            "$ref": "#/components/schemas/InterventionStatus"
+          },
+          "history": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": ["status", "at"],
+              "properties": {
+                "status": {
+                  "$ref": "#/components/schemas/InterventionStatus"
+                },
+                "at": {
+                  "type": "string",
+                  "format": "date-time"
+                }
+              }
+            }
+          }
+        }
+      },
+      "UpdateInterventionStatusBody": {
+        "type": "object",
+        "required": ["status"],
+        "properties": {
+          "status": {
+            "$ref": "#/components/schemas/InterventionStatus"
+          }
+        },
+        "description": "Allowed transitions follow the lifecycle. Others return 409"
+      },
+      "QuoteLine": {
+        "type": "object",
+        "required": ["label", "quantity", "unitPriceCents"],
+        "properties": {
+          "label": {
+            "type": "string",
+            "example": "Remplacement du siphon"
+          },
+          "quantity": {
+            "type": "number",
+            "exclusiveMinimum": 0,
+            "example": 1
+          },
+          "unitPriceCents": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Amount in euro cents",
+            "example": 4500
+          }
+        }
+      },
+      "QuoteStatus": {
+        "type": "string",
+        "enum": ["draft", "sent", "accepted", "declined", "expired"]
+      },
+      "Quote": {
+        "type": "object",
+        "required": [
+          "id",
+          "interventionId",
+          "artisanId",
+          "lines",
+          "totalCents",
+          "currency",
+          "validUntil",
+          "status",
+          "createdAt"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "interventionId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "artisanId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "lines": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/QuoteLine"
+            }
+          },
+          "totalCents": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Amount in euro cents",
+            "example": 9500
+          },
+          "currency": {
+            "type": "string",
+            "const": "EUR"
+          },
+          "message": {
+            "type": ["string", "null"]
+          },
+          "validUntil": {
+            "type": "string",
+            "format": "date"
+          },
+          "status": {
+            "$ref": "#/components/schemas/QuoteStatus"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "QuoteList": {
+        "type": "object",
+        "required": ["data", "meta"],
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Quote"
+            }
+          },
+          "meta": {
+            "$ref": "#/components/schemas/PageMeta"
+          }
+        }
+      },
+      "CreateQuoteBody": {
+        "type": "object",
+        "required": ["interventionId", "lines", "validUntil"],
+        "properties": {
+          "interventionId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "lines": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "$ref": "#/components/schemas/QuoteLine"
+            }
+          },
+          "message": {
+            "type": "string",
+            "maxLength": 1000
+          },
+          "validUntil": {
+            "type": "string",
+            "format": "date"
+          },
+          "send": {
+            "type": "boolean",
+            "default": true,
+            "description": "false keeps the quote as a draft"
+          }
+        }
+      },
+      "UpdateQuoteBody": {
+        "type": "object",
+        "required": [],
+        "properties": {
+          "lines": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "$ref": "#/components/schemas/QuoteLine"
+            }
+          },
+          "message": {
+            "type": "string",
+            "maxLength": 1000
+          },
+          "validUntil": {
+            "type": "string",
+            "format": "date"
+          },
+          "send": {
+            "type": "boolean"
+          }
+        },
+        "minProperties": 1,
+        "description": "Partial update, only while the quote is a draft or sent"
+      },
+      "Availability": {
+        "type": "object",
+        "required": ["slots", "unavailableDates"],
+        "properties": {
+          "slots": {
+            "type": "array",
+            "description": "Weekly recurring slots",
+            "items": {
+              "type": "object",
+              "required": ["dayOfWeek", "start", "end"],
+              "properties": {
+                "dayOfWeek": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 7,
+                  "description": "1 = Monday, 7 = Sunday",
+                  "example": 1
+                },
+                "start": {
+                  "type": "string",
+                  "pattern": "^([01]\\d|2[0-3]):[0-5]\\d$",
+                  "example": "09:00"
+                },
+                "end": {
+                  "type": "string",
+                  "pattern": "^([01]\\d|2[0-3]):[0-5]\\d$",
+                  "example": "17:00"
+                }
+              }
+            }
+          },
+          "unavailableDates": {
+            "type": "array",
+            "description": "Days off",
+            "items": {
+              "type": "string",
+              "format": "date"
+            }
+          }
+        }
+      },
+      "AppointmentStatus": {
+        "type": "string",
+        "enum": ["proposed", "confirmed", "cancelled", "done"]
+      },
+      "Appointment": {
+        "type": "object",
+        "required": [
+          "id",
+          "interventionId",
+          "quoteId",
+          "clientId",
+          "artisanId",
+          "startsAt",
+          "endsAt",
+          "status"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "interventionId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "quoteId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "clientId": {
+            "type": "string"
+          },
+          "artisanId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "startsAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "endsAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "status": {
+            "$ref": "#/components/schemas/AppointmentStatus"
+          },
+          "note": {
+            "type": ["string", "null"]
+          }
+        }
+      },
+      "AppointmentList": {
+        "type": "object",
+        "required": ["data", "meta"],
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Appointment"
+            }
+          },
+          "meta": {
+            "$ref": "#/components/schemas/PageMeta"
+          }
+        }
+      },
+      "CreateAppointmentBody": {
+        "type": "object",
+        "required": ["quoteId", "startsAt", "endsAt"],
+        "properties": {
+          "quoteId": {
+            "type": "string",
+            "format": "uuid",
+            "description": "Must be an accepted quote"
+          },
+          "startsAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "endsAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "note": {
+            "type": "string",
+            "maxLength": 500
+          }
+        }
+      },
+      "UpdateAppointmentBody": {
+        "type": "object",
+        "required": [],
+        "properties": {
+          "startsAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "endsAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "status": {
+            "type": "string",
+            "enum": ["confirmed", "cancelled", "done"],
+            "description": "confirmed and done: artisan only"
+          },
+          "note": {
+            "type": "string",
+            "maxLength": 500
+          }
+        },
+        "minProperties": 1
+      },
+      "PaymentStatus": {
+        "type": "string",
+        "enum": ["pending", "succeeded", "failed", "refunded"]
+      },
+      "Payment": {
+        "type": "object",
+        "required": [
+          "id",
+          "quoteId",
+          "interventionId",
+          "amountCents",
+          "currency",
+          "status",
+          "createdAt"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "quoteId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "interventionId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "amountCents": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Amount in euro cents",
+            "example": 9500
+          },
+          "currency": {
+            "type": "string",
+            "const": "EUR"
+          },
+          "status": {
+            "$ref": "#/components/schemas/PaymentStatus"
+          },
+          "checkoutUrl": {
+            "type": ["string", "null"],
+            "format": "uri",
+            "description": "Provider page to redirect the client to, set while pending"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "PaymentList": {
+        "type": "object",
+        "required": ["data", "meta"],
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Payment"
+            }
+          },
+          "meta": {
+            "$ref": "#/components/schemas/PageMeta"
+          }
+        }
+      },
+      "CreatePaymentBody": {
+        "type": "object",
+        "required": ["quoteId"],
+        "properties": {
+          "quoteId": {
+            "type": "string",
+            "format": "uuid",
+            "description": "Accepted quote of a completed intervention"
+          },
+          "returnUrl": {
+            "type": "string",
+            "format": "uri",
+            "description": "Where the provider sends the client back"
+          }
+        }
+      },
+      "Review": {
+        "type": "object",
+        "required": [
+          "id",
+          "interventionId",
+          "artisanId",
+          "authorName",
+          "rating",
+          "comment",
+          "createdAt"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "interventionId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "artisanId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "authorName": {
+            "type": "string",
+            "example": "Marie L."
+          },
+          "rating": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 5,
+            "example": 5
+          },
+          "comment": {
+            "type": ["string", "null"],
+            "example": "Rapide et soigné"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "ReviewList": {
+        "type": "object",
+        "required": ["data", "meta"],
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Review"
+            }
+          },
+          "meta": {
+            "$ref": "#/components/schemas/PageMeta"
+          }
+        }
+      },
+      "CreateReviewBody": {
+        "type": "object",
+        "required": ["interventionId", "rating"],
+        "properties": {
+          "interventionId": {
+            "type": "string",
+            "format": "uuid",
+            "description": "A paid intervention of the signed-in client, one review per intervention"
+          },
+          "rating": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 5
+          },
+          "comment": {
+            "type": "string",
+            "maxLength": 1000
+          }
+        }
+      },
+      "Notification": {
+        "type": "object",
+        "required": ["id", "type", "title", "body", "readAt", "createdAt"],
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "quote_received",
+              "quote_accepted",
+              "appointment_update",
+              "payment_update",
+              "review_received"
+            ]
+          },
+          "title": {
+            "type": "string",
+            "example": "Nouveau devis"
+          },
+          "body": {
+            "type": "string",
+            "example": "Jean Dupont vous a envoyé un devis de 95 €"
+          },
+          "resourceId": {
+            "type": ["string", "null"],
+            "description": "Id of the related resource"
+          },
+          "readAt": {
+            "type": ["string", "null"],
+            "format": "date-time"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "NotificationList": {
+        "type": "object",
+        "required": ["data", "meta"],
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Notification"
+            }
+          },
+          "meta": {
+            "$ref": "#/components/schemas/PageMeta"
+          }
+        }
+      },
+      "NotificationPreferences": {
+        "type": "object",
+        "required": ["email", "push"],
+        "properties": {
+          "email": {
+            "type": "boolean",
+            "example": true
+          },
+          "push": {
+            "type": "boolean",
+            "example": false
+          }
+        }
+      },
+      "MarkNotificationReadBody": {
+        "type": "object",
+        "required": ["read"],
+        "properties": {
+          "read": {
+            "type": "boolean"
+          }
+        }
+      }
+    }
+  }
+}
