@@ -6,6 +6,7 @@ import { auth } from './auth.ts'
 import { trustedOrigin } from './config.ts'
 import planned from '../contracts/planned.json'
 import { healthRoutes } from './modules/health/health.routes.ts'
+import { adminArtisansRouter } from './modules/admin/admin.artisans.routes.ts'
 
 export const app = new OpenAPIHono()
 
@@ -20,6 +21,7 @@ app.use(
 app.on(['GET', 'POST'], '/api/auth/*', (c) => auth.handler(c.req.raw))
 
 app.route('/', healthRoutes)
+app.route('/api/admin/artisans', adminArtisansRouter)
 
 const authBasePath = '/api/auth'
 let authSchema: ReturnType<typeof auth.api.generateOpenAPISchema> | undefined
