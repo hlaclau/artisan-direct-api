@@ -6,7 +6,6 @@ export type Role = 'customer' | 'worker' | 'admin'
 export const requireRole = (allowedRoles: Role[]) => {
   return createMiddleware(async (c, next) => {
     const session = c.get('session')
-    console.log(session)
 
     if (!session) {
       throw new HTTPException(401) // Unauthorized
