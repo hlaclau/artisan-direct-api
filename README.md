@@ -96,6 +96,7 @@ GOOGLE_CLIENT_SECRET=...
 
 Schema is in `src/db/schema.ts`, migrations in `drizzle/`.
 
+- Worker profiles are linked one-to-one to auth users. Photos and documents reference the worker profile; a unique `(worker_id, type)` index allows one current document of each type. KBIS expiry defaults to three months after insertion. `expires_at` is metadata for the application to report expiry; no scheduled status update is run by the database.
 - After changing the schema: `mise run db:generate`, then `mise run db:migrate`
 - After changing Better Auth plugins/options: `mise run auth:generate` to refresh the auth tables, then generate a migration
 - Browse the data with `mise run db:studio` (opens https://local.drizzle.studio)

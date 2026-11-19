@@ -1,0 +1,1 @@
+ALTER TABLE "worker_documents" ALTER COLUMN "expires_at" SET DEFAULT now() + interval '3 months';
