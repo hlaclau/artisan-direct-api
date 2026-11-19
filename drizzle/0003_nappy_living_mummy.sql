@@ -1,0 +1,1 @@
+ALTER TABLE "worker_profile" ADD COLUMN "validation_reason" text;
